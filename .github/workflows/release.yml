@@ -47,7 +47,15 @@ jobs:
               },
               method="POST",
           )
-          with urllib.request.urlopen(req, timeout=30) as resp:
-              print(f"Release {tag} created successfully (HTTP {resp.status})")
+          import urllib.error
+
+          try:
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  print(f"Release {tag} created successfully (HTTP {resp.status})")
+          except urllib.error.HTTPError as err:
+              if err.code in (409, 422):
+                  print(f"Release {tag} already exists (HTTP {err.code}), skipping creation")
+              else:
+                  raise
           EOF
 
