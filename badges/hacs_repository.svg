@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="246" height="40" viewBox="0 0 246 40" role="img" aria-label="Open your Home Assistant instance and open a repository inside HACS">
+  <title>Open in HACS</title>
+  <rect width="246" height="40" rx="6" fill="#03a9f4"/>
+  <rect x="1" y="1" width="244" height="38" rx="5" fill="#18bcf2"/>
+  <path fill="#fff" d="M22 10L11 20h3v10h6v-6h4v6h6V20h3L22 10z"/>
+  <g fill="#fff" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision">
+    <text x="44" y="17" font-size="8.5" opacity="0.92">OPEN YOUR HOME ASSISTANT</text>
+    <text x="44" y="30" font-size="11.5" font-weight="bold">HACS REPOSITORY</text>
+  </g>
+</svg>

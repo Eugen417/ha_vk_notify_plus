@@ -5,10 +5,12 @@
 <h1 align="center">VK Notify Integration for Home Assistant</h1>
 
 <p align="center">
-  <a href="https://github.com/Eugen417/homeassistant-blueprints/actions/workflows/ha-validate.yml"><img alt="HA Validation" src="https://img.shields.io/github/actions/workflow/status/Eugen417/homeassistant-blueprints/ha-validate.yml?style=for-the-badge&label=HA%20Validation" /></a>
-  <a href="https://github.com/hacs/integration"><img alt="hacs_badge" src="https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge" /></a>
-  <a href="https://www.home-assistant.io/"><img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2024.6%2B%20%7C%202026.11%2B-blue.svg?style=for-the-badge&logo=home-assistant" /></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge" /></a>
+  <img alt="HA Validation" src="badges/ha_validation.svg" />
+  <a href="https://github.com/hacs/integration"><img alt="hacs_badge" src="badges/hacs.svg" /></a>
+  <img alt="GitHub Release" src="badges/release.svg" />
+  <a href="https://www.home-assistant.io/"><img alt="Home Assistant" src="badges/home_assistant.svg" /></a>
+  <img alt="GitHub Stars" src="badges/stars.svg" />
+  <a href="LICENSE"><img alt="License: MIT" src="badges/license.svg" /></a>
 </p>
 
 Интеграция **VK Notify** для **Home Assistant** — отправка текстовых уведомлений, фотографий (включая снимки камер и **Frigate** по URL или из локальных файлов), документов, голосовых и нативных видеосообщений, интерактивных клавиатур, каруселей и приём входящих команд/нажатий кнопок через **VK API (v5.199)** и **Bots Long Poll API**. Полностью совместима с **Home Assistant 2026.11+**.
@@ -65,7 +67,7 @@
 
 ### Через HACS / Marketplace (HA 2026.11+)
 
-[![Открыть в Home Assistant и установить VK Notify через HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=udocs-ru&repository=ha_vk_notify&category=integration)
+[![Открыть в Home Assistant и установить VK Notify через HACS.](badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=udocs-ru&repository=ha_vk_notify&category=integration)
 
 Если кнопка не работает: добавьте пользовательский репозиторий в HACS / Marketplace вручную (категория: **Интеграция**), установите **VK Notify** и перезапустите Home Assistant.
 

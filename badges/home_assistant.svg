@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="268" height="28" role="img" aria-label="HOME ASSISTANT: 2024.6+ | 2026.11+">
+  <title>HOME ASSISTANT: 2024.6+ | 2026.11+</title>
+  <g shape-rendering="crispEdges">
+    <rect width="128" height="28" fill="#555"/>
+    <rect x="128" width="140" height="28" fill="#18BCF2"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="100">
+    <text transform="scale(.1)" x="640" y="175" textLength="1040" fill="#fff">HOME ASSISTANT</text>
+    <text transform="scale(.1)" x="1980" y="175" textLength="1160" fill="#fff" font-weight="bold">2024.6+ | 2026.11+</text>
+  </g>
+</svg>

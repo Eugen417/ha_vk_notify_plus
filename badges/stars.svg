@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="142" height="28" role="img" aria-label="STARS: ★ VK NOTIFY">
+  <title>STARS: ★ VK NOTIFY</title>
+  <g shape-rendering="crispEdges">
+    <rect width="58" height="28" fill="#555"/>
+    <rect x="58" width="84" height="28" fill="#e3b341"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="100">
+    <text transform="scale(.1)" x="290" y="175" textLength="360" fill="#fff">STARS</text>
+    <text transform="scale(.1)" x="1000" y="175" textLength="620" fill="#fff" font-weight="bold">★ VK NOTIFY</text>
+  </g>
+</svg>
