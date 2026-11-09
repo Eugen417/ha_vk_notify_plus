@@ -1,0 +1,13 @@
+{
+  "domain": "vk_notify",
+  "name": "VK Notify",
+  "codeowners": ["@Eugen417"],
+  "config_flow": true,
+  "documentation": "https://github.com/Eugen417/ha_vk_notify_plus",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/Eugen417/ha_vk_notify_plus/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}
+
+

@@ -73,7 +73,7 @@ class VkNotifyEntity(NotifyEntity):
         self._last_message_id: int | None = None
         self._last_cmid: int | None = None
         self._attr_unique_id = entry.entry_id
-        base_name = entry.data.get("name", "VK Notify Plus")
+        base_name = entry.data.get("name", "VK Notify")
         self._attr_name = f"{base_name} {self._peer_id}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},

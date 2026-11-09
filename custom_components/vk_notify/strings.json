@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Настройка VK Notify Plus",
+        "title": "Настройка VK Notify",
         "description": "Введите токен бота сообщества VK.\n\n[Документация]({docs_url})\n\n💡 **Версия 1.0.0**\n📝 **Что нового:** Прямая отправка снимков с камер (`camera_entity`), поддержка `media-source://`, сохранение токена для видео в настройках, расшифровка голосовых (`transcript`) в Long Poll и защита секретов в диагностике.",
         "data": {
           "access_token": "Токен доступа сообщества",
@@ -55,7 +55,7 @@
       "chat_not_writable": "Бот не может отправлять сообщения в этот чат. Выберите другой чат."
     },
     "abort": {
-      "already_configured": "Этот экземпляр VK Notify Plus уже настроен.",
+      "already_configured": "Этот экземпляр VK Notify уже настроен.",
       "reconfigure_successful": "Настройка успешно обновлена."
     }
   },
@@ -74,7 +74,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "title": {
           "name": "Заголовок",
@@ -140,7 +140,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "message": {
           "name": "Подпись к фото",
@@ -198,7 +198,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "file": {
           "name": "Локальный путь к файлу или media-source://",
@@ -252,7 +252,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "video_access_token": {
           "name": "Токен пользователя (User Token)",
@@ -310,7 +310,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "file": {
           "name": "Локальный путь к аудиофайлу",
@@ -360,7 +360,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "message": {
           "name": "Текст поста",
@@ -382,7 +382,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "message": {
           "name": "Новый текст сообщения",
@@ -420,7 +420,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "conversation_message_id": {
           "name": "Идентификатор сообщения (cmid)",
@@ -434,7 +434,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "type": {
           "name": "Тип активности",
@@ -448,7 +448,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "conversation_message_id": {
           "name": "Идентификатор сообщения (cmid)",
@@ -466,7 +466,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "conversation_message_id": {
           "name": "Идентификатор сообщения (cmid)",
@@ -480,7 +480,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "conversation_message_id": {
           "name": "Идентификатор сообщения (cmid)",
@@ -494,7 +494,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "event_id": {
           "name": "Event ID",
@@ -516,7 +516,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "title": {
           "name": "Новое название",
@@ -530,7 +530,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "user_id": {
           "name": "VK ID пользователя",
@@ -544,7 +544,7 @@
       "fields": {
         "entity_id": {
           "name": "Объект",
-          "description": "Уведомитель VK Notify Plus."
+          "description": "Уведомитель VK Notify."
         },
         "sticker_id": {
           "name": "ID Стикера",

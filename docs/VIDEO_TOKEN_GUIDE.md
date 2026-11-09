@@ -24,7 +24,7 @@
 
 ---
 
-### 🚀 Использование токена в новом сервисе `vk_notify_plus.send_video`
+### 🚀 Использование токена в новом сервисе `vk_notify.send_video`
 
 Полученный токен пользователя вставляется напрямую в параметры нового сервиса отправки нативных видеороликов. Ниже представлен пример конфигурации блока автоматизации в Home Assistant:
 
@@ -34,10 +34,10 @@ description: ""
 triggers: []
 conditions: []
 actions:
-  - action: vk_notify_plus.send_video
+  - action: vk_notify.send_video
     metadata: {}
     target:
-      entity_id: notify.vk_notify_plus_2000000003
+      entity_id: notify.vk_notify_2000000003
     data:
       parse_mode: html
       disable_mentions: false

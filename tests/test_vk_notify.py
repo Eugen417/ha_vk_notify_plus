@@ -9,7 +9,7 @@ import types
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PKG_DIR = ROOT / "custom_components" / "vk_notify_plus"
+PKG_DIR = ROOT / "custom_components" / "vk_notify"
 
 
 def _load_module_ast(filename: str, extra_globals: dict | None = None) -> dict:

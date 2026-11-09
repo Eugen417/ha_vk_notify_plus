@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up VK Notify Plus",
+        "title": "Set up VK Notify",
         "description": "Enter your VK community bot token.\n\n[Documentation]({docs_url})\n\n💡 **Version 1.0.0**\n📝 **What's new:** Direct camera snapshot sending (`camera_entity`), `media-source://` support, optional stored video token, incoming voice transcript in Long Poll, and sensitive data redaction.",
         "data": {
           "access_token": "Community Access Token",
@@ -55,7 +55,7 @@
       "chat_not_writable": "The bot cannot send messages to this chat. Select a different chat."
     },
     "abort": {
-      "already_configured": "This VK Notify Plus instance is already configured.",
+      "already_configured": "This VK Notify instance is already configured.",
       "reconfigure_successful": "Re-configuration was successful."
     }
   },
@@ -74,7 +74,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "title": {
           "name": "Title",
@@ -140,7 +140,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "message": {
           "name": "Caption",
@@ -198,7 +198,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "file": {
           "name": "Local file path or media-source://",
@@ -252,7 +252,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "video_access_token": {
           "name": "User Token",
@@ -310,7 +310,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "file": {
           "name": "Local audio path",
@@ -360,7 +360,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "message": {
           "name": "Post text",
@@ -382,7 +382,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "message": {
           "name": "New message text",
@@ -420,7 +420,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "conversation_message_id": {
           "name": "Conversation Message ID",
@@ -434,7 +434,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "type": {
           "name": "Activity type",
@@ -448,7 +448,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "conversation_message_id": {
           "name": "Conversation Message ID",
@@ -466,7 +466,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "conversation_message_id": {
           "name": "Conversation Message ID",
@@ -480,7 +480,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "conversation_message_id": {
           "name": "Conversation Message ID",
@@ -494,7 +494,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "event_id": {
           "name": "Event ID",
@@ -516,7 +516,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "title": {
           "name": "New title",
@@ -530,7 +530,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "user_id": {
           "name": "VK User ID",
@@ -544,7 +544,7 @@
       "fields": {
         "entity_id": {
           "name": "Entity",
-          "description": "VK Notify Plus entity."
+          "description": "VK Notify entity."
         },
         "sticker_id": {
           "name": "Sticker ID",
