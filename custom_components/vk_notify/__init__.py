@@ -38,7 +38,7 @@ class VkNotifyRuntimeData:
     video_access_token: str | None
 
 
-type VkNotifyConfigEntry = ConfigEntry[VkNotifyRuntimeData]
+VkNotifyConfigEntry = ConfigEntry[VkNotifyRuntimeData]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: VkNotifyConfigEntry) -> bool:
