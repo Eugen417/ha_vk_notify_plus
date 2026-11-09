@@ -1,12 +1,23 @@
 """
 VK Notify config_flow.py v1.0.0
-Added: Optional video_access_token storage (masked password field) and mode switching in reconfigure.
+Two-level architecture: Community/Bot (ConfigEntry) -> Chats (ConfigSubentryFlow),
+with multi-chat selection and automatic community name detection.
 """
 
 from __future__ import annotations
 
+from typing import Any, override
+
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigEntryState,
+    ConfigFlowResult,
+    ConfigSubentryFlow,
+    SubentryFlowResult,
+)
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     SelectSelector,
@@ -46,10 +57,10 @@ STEP_TOKEN_SCHEMA = vol.Schema(
 )
 
 
-async def _detect_group_id(
+async def _detect_group_info(
     hass, access_token: str, verify_ssl: bool = True
-) -> int | None:
-    """Try to auto-detect group_id from a community token via groups.getById."""
+) -> tuple[int | None, str | None]:
+    """Auto-detect (group_id, group_name) from a community token via groups.getById."""
     session = async_get_clientsession(hass, verify_ssl=verify_ssl)
     try:
         async with session.get(
@@ -62,10 +73,19 @@ async def _detect_group_id(
             resp_obj.get("groups", []) if isinstance(resp_obj, dict) else (resp_obj or [])
         )
         if groups and isinstance(groups, list):
-            return groups[0]["id"]
+            g = groups[0]
+            return g.get("id"), g.get("name")
     except Exception:
         pass
-    return None
+    return None, None
+
+
+async def _detect_group_id(
+    hass, access_token: str, verify_ssl: bool = True
+) -> int | None:
+    """Try to auto-detect group_id from a community token via groups.getById."""
+    group_id, _ = await _detect_group_info(hass, access_token, verify_ssl=verify_ssl)
+    return group_id
 
 
 async def _check_longpoll_access(
@@ -153,11 +173,23 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._access_token: str = ""
         self._video_access_token: str = ""
         self._name: str = "VK Notify"
+        self._group_name: str | None = None
         self._mode: str = MODE_API
         self._group_id: int | None = None
         self._verify_ssl: bool = True
 
-    async def async_step_user(self, user_input=None):
+    @classmethod
+    @callback
+    @override
+    def async_get_supported_subentry_types(
+        cls, config_entry: ConfigEntry
+    ) -> dict[str, type[ConfigSubentryFlow]]:
+        """Return subentries supported by this integration (chats belonging to the community)."""
+        return {
+            "chat": VkChatSubentryFlowHandler,
+        }
+
+    async def async_step_user(self, user_input=None) -> ConfigFlowResult:
         errors = {}
 
         if user_input is not None:
@@ -178,7 +210,7 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ).strip()
                     self._name = user_input.get("name", "VK Notify")
                     self._verify_ssl = verify_ssl
-                    self._group_id = await _detect_group_id(
+                    self._group_id, self._group_name = await _detect_group_info(
                         self.hass, self._access_token, verify_ssl=verify_ssl
                     )
                     return await self.async_step_select_mode()
@@ -231,25 +263,34 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_select_chat(self, user_input=None):
+    async def async_step_select_chat(self, user_input=None) -> ConfigFlowResult:
         errors = {}
         all_options, writable_ids = await _get_conversations(
             self.hass, self._access_token, verify_ssl=self._verify_ssl
         )
 
         if user_input is not None:
-            peer_id_str = str(user_input[CONF_PEER_ID]).strip()
-            if not peer_id_str.lstrip("-").isdigit():
+            raw_selected = user_input[CONF_PEER_ID]
+            if isinstance(raw_selected, list):
+                peer_list = [str(x).strip() for x in raw_selected if str(x).strip()]
+            else:
+                peer_list = [str(raw_selected).strip()] if str(raw_selected).strip() else []
+
+            if not peer_list or any(not p.lstrip("-").isdigit() for p in peer_list):
                 errors["base"] = "chat_not_writable"
-            elif peer_id_str in all_options and peer_id_str not in writable_ids:
+            elif any(p in all_options and p not in writable_ids for p in peer_list):
                 errors["base"] = "chat_not_writable"
             else:
-                chat_label = all_options.get(peer_id_str, f"Чат {peer_id_str}")
-                card_title = f"{self._name}: {chat_label}"
+                first_peer_int = int(peer_list[0])
+                community_title = (
+                    f"{self._name} ({self._group_name})"
+                    if self._group_name and self._group_name not in self._name
+                    else self._name
+                )
 
-                entry_data = {
+                entry_data: dict[str, Any] = {
                     CONF_ACCESS_TOKEN: self._access_token,
-                    CONF_PEER_ID: int(peer_id_str),
+                    CONF_PEER_ID: first_peer_int,
                     CONF_MODE: self._mode,
                     CONF_GROUP_ID: self._group_id,
                     "name": self._name,
@@ -258,9 +299,29 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if self._video_access_token:
                     entry_data[CONF_VIDEO_ACCESS_TOKEN] = self._video_access_token
 
+                subentries = []
+                seen_peers: set[str] = set()
+                for pid_str in peer_list:
+                    if pid_str in seen_peers:
+                        continue
+                    seen_peers.add(pid_str)
+                    chat_label = all_options.get(pid_str, f"Чат {pid_str}")
+                    subentries.append(
+                        {
+                            "subentry_type": "chat",
+                            "title": chat_label,
+                            "unique_id": pid_str,
+                            "data": {
+                                CONF_PEER_ID: int(pid_str),
+                                "name": self._name,
+                            },
+                        }
+                    )
+
                 return self.async_create_entry(
-                    title=card_title,
+                    title=community_title,
                     data=entry_data,
+                    subentries=subentries,
                 )
 
         options = [{"value": str(k), "label": v} for k, v in all_options.items()]
@@ -273,6 +334,7 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         SelectSelectorConfig(
                             options=options,
                             custom_value=True,
+                            multiple=True,
                             mode=SelectSelectorMode.DROPDOWN,
                         )
                     )
@@ -281,73 +343,69 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reconfigure(self, user_input=None):
+    async def async_step_reconfigure(self, user_input=None) -> ConfigFlowResult:
         entry = self._get_reconfigure_entry()
-        self._access_token = entry.data[CONF_ACCESS_TOKEN]
+        current_token = entry.data[CONF_ACCESS_TOKEN]
         current_verify = entry.data.get(CONF_VERIFY_SSL, True)
         current_mode = entry.data.get(CONF_MODE, MODE_API)
         current_video_token = entry.data.get(CONF_VIDEO_ACCESS_TOKEN, "")
+        current_name = entry.data.get("name", "VK Notify")
 
         errors = {}
-        all_options, writable_ids = await _get_conversations(
-            self.hass, self._access_token, verify_ssl=current_verify
-        )
 
         if user_input is not None:
-            peer_id_str = str(user_input[CONF_PEER_ID]).strip()
+            new_token = (user_input.get(CONF_ACCESS_TOKEN) or current_token).strip()
             new_verify = user_input.get(CONF_VERIFY_SSL, True)
             new_mode = user_input.get(CONF_MODE, current_mode)
             new_video_token = (user_input.get(CONF_VIDEO_ACCESS_TOKEN) or "").strip()
-            group_id = entry.data.get(CONF_GROUP_ID) or await _detect_group_id(
-                self.hass, self._access_token, verify_ssl=new_verify
-            )
+            new_name = (user_input.get("name") or current_name).strip()
 
-            if not peer_id_str.lstrip("-").isdigit():
-                errors["base"] = "chat_not_writable"
-            elif peer_id_str in all_options and peer_id_str not in writable_ids:
-                errors["base"] = "chat_not_writable"
-            elif new_mode == MODE_LONGPOLL and not group_id:
-                errors["base"] = "group_id_required"
-            elif new_mode == MODE_LONGPOLL and not await _check_longpoll_access(
-                self.hass, self._access_token, group_id, verify_ssl=new_verify
-            ):
-                errors["base"] = "longpoll_no_access"
+            valid = await _validate_token(self.hass, new_token, verify_ssl=new_verify)
+            if not valid:
+                errors["base"] = "invalid_token"
             else:
-                chat_label = all_options.get(peer_id_str, f"Чат {peer_id_str}")
-                base_name = entry.data.get("name", "VK Notify")
-                updated_data = {
-                    **entry.data,
-                    CONF_PEER_ID: int(peer_id_str),
-                    CONF_MODE: new_mode,
-                    CONF_GROUP_ID: group_id,
-                    CONF_VERIFY_SSL: new_verify,
-                }
-                if new_video_token:
-                    updated_data[CONF_VIDEO_ACCESS_TOKEN] = new_video_token
-                else:
-                    updated_data.pop(CONF_VIDEO_ACCESS_TOKEN, None)
-
-                return self.async_update_reload_and_abort(
-                    entry,
-                    title=f"{base_name}: {chat_label}",
-                    data=updated_data,
+                group_id, group_name = await _detect_group_info(
+                    self.hass, new_token, verify_ssl=new_verify
                 )
+                group_id = group_id or entry.data.get(CONF_GROUP_ID)
 
-        options = [{"value": str(k), "label": v} for k, v in all_options.items()]
+                if new_mode == MODE_LONGPOLL and not group_id:
+                    errors["base"] = "group_id_required"
+                elif new_mode == MODE_LONGPOLL and not await _check_longpoll_access(
+                    self.hass, new_token, group_id, verify_ssl=new_verify
+                ):
+                    errors["base"] = "longpoll_no_access"
+                else:
+                    updated_data = {
+                        **entry.data,
+                        CONF_ACCESS_TOKEN: new_token,
+                        CONF_MODE: new_mode,
+                        CONF_GROUP_ID: group_id,
+                        "name": new_name,
+                        CONF_VERIFY_SSL: new_verify,
+                    }
+                    if new_video_token:
+                        updated_data[CONF_VIDEO_ACCESS_TOKEN] = new_video_token
+                    else:
+                        updated_data.pop(CONF_VIDEO_ACCESS_TOKEN, None)
+
+                    new_title = (
+                        f"{new_name} ({group_name})"
+                        if group_name and group_name not in new_name
+                        else entry.title
+                    )
+                    return self.async_update_reload_and_abort(
+                        entry,
+                        title=new_title,
+                        data=updated_data,
+                    )
 
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        CONF_PEER_ID, default=str(entry.data[CONF_PEER_ID])
-                    ): SelectSelector(
-                        SelectSelectorConfig(
-                            options=options,
-                            custom_value=True,
-                            mode=SelectSelectorMode.DROPDOWN,
-                        )
-                    ),
+                    vol.Required(CONF_ACCESS_TOKEN, default=current_token): PASSWORD_SELECTOR,
+                    vol.Optional("name", default=current_name): str,
                     vol.Required(CONF_MODE, default=current_mode): SelectSelector(
                         SelectSelectorConfig(
                             options=[MODE_API, MODE_LONGPOLL],
@@ -363,3 +421,112 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             errors=errors,
         )
+
+
+class VkChatSubentryFlowHandler(ConfigSubentryFlow):
+    """Flow for adding or reconfiguring chats inside an existing VK community entry."""
+
+    @property
+    def _is_new(self) -> bool:
+        return self.source == "user"
+
+    async def async_step_set_chat(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Add or reconfigure a chat subentry using the parent community's token."""
+        entry = self._get_entry()
+        if entry.state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="entry_not_loaded")
+
+        access_token: str = entry.data[CONF_ACCESS_TOKEN]
+        verify_ssl: bool = entry.data.get(CONF_VERIFY_SSL, True)
+        default_base_name: str = entry.data.get("name", "VK Notify")
+
+        all_options, writable_ids = await _get_conversations(
+            self.hass, access_token, verify_ssl=verify_ssl
+        )
+        existing_peers = {
+            str(sub.data.get(CONF_PEER_ID))
+            for sub in entry.subentries.values()
+            if self._is_new or sub.subentry_id != self._get_reconfigure_subentry().subentry_id
+        }
+
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            peer_id_str = str(user_input[CONF_PEER_ID]).strip()
+            custom_name = (user_input.get("name") or default_base_name).strip()
+
+            if not peer_id_str.lstrip("-").isdigit():
+                errors["base"] = "chat_not_writable"
+            elif peer_id_str in all_options and peer_id_str not in writable_ids:
+                errors["base"] = "chat_not_writable"
+            elif peer_id_str in existing_peers:
+                errors["base"] = "already_configured"
+            else:
+                chat_label = all_options.get(peer_id_str, f"Чат {peer_id_str}")
+                sub_data = {
+                    CONF_PEER_ID: int(peer_id_str),
+                    "name": custom_name,
+                }
+                if self._is_new:
+                    result = self.async_create_entry(
+                        title=chat_label,
+                        data=sub_data,
+                        unique_id=peer_id_str,
+                    )
+                    self.hass.async_create_task(
+                        self.hass.config_entries.async_reload(entry.entry_id)
+                    )
+                    return result
+
+                subentry = self._get_reconfigure_subentry()
+                result = self.async_update_and_abort(
+                    entry,
+                    subentry,
+                    title=chat_label,
+                    data=sub_data,
+                )
+                self.hass.async_create_task(
+                    self.hass.config_entries.async_reload(entry.entry_id)
+                )
+                return result
+
+        options = []
+        for k, v in all_options.items():
+            label = f"✅ {v} (уже добавлен)" if k in existing_peers else v
+            options.append({"value": str(k), "label": label})
+
+        current_peer = ""
+        current_name = default_base_name
+        if not self._is_new:
+            sub = self._get_reconfigure_subentry()
+            current_peer = str(sub.data.get(CONF_PEER_ID, ""))
+            current_name = sub.data.get("name", default_base_name)
+
+        peer_field = (
+            vol.Required(CONF_PEER_ID, default=current_peer)
+            if current_peer
+            else vol.Required(CONF_PEER_ID)
+        )
+
+        return self.async_show_form(
+            step_id="set_chat",
+            data_schema=vol.Schema(
+                {
+                    peer_field: SelectSelector(
+                        SelectSelectorConfig(
+                            options=options,
+                            custom_value=True,
+                            mode=SelectSelectorMode.DROPDOWN,
+                        )
+                    ),
+                    vol.Optional("name", default=current_name): str,
+                }
+            ),
+            errors=errors,
+        )
+
+    async_step_user = async_step_set_chat
+    async_step_reconfigure = async_step_set_chat
+

@@ -77,6 +77,16 @@ async def async_get_config_entry_diagnostics(
             }
         )
 
+    subentries_diag = [
+        {
+            "subentry_id": sub.subentry_id,
+            "subentry_type": sub.subentry_type,
+            "title": sub.title,
+            "peer_id": _mask_id(sub.data.get(CONF_PEER_ID)),
+        }
+        for sub in entry.subentries.values()
+    ]
+
     return {
         "integration": {
             "domain": DOMAIN,
@@ -84,12 +94,14 @@ async def async_get_config_entry_diagnostics(
             "mode": entry.data.get(CONF_MODE),
             "verify_ssl": entry.data.get(CONF_VERIFY_SSL, True),
             "chat_type": "group_chat" if is_group_chat else "direct_or_community",
+            "chats_count": len(subentries_diag) or (1 if peer_id else 0),
         },
         "config_entry": {
             "entry_id": entry.entry_id,
             "version": entry.version,
             "data": redacted_data,
             "options": async_redact_data(entry.options, TO_REDACT),
+            "subentries": subentries_diag,
         },
         "longpoll": {
             "configured": entry.data.get(CONF_MODE) == "longpoll",

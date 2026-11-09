@@ -10,12 +10,12 @@ import random
 from typing import Any
 
 from homeassistant.components.notify import NotifyEntity, NotifyEntityFeature
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant, ServiceResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .api import VkApiClient
 from .const import (
@@ -50,19 +50,40 @@ from .services import async_register_vk_services
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([VkNotifyEntity(hass, entry)])
+    chat_subentries = [
+        sub for sub in entry.subentries.values() if sub.subentry_type == "chat"
+    ]
+    if chat_subentries:
+        for subentry in chat_subentries:
+            async_add_entities(
+                [VkNotifyEntity(hass, entry, subentry)],
+                config_subentry_id=subentry.subentry_id,
+            )
+    elif CONF_PEER_ID in entry.data:
+        async_add_entities([VkNotifyEntity(hass, entry, None)])
+
     platform = entity_platform.async_get_current_platform()
     async_register_vk_services(platform)
+
 
 class VkNotifyEntity(NotifyEntity):
     _attr_supported_features = NotifyEntityFeature.TITLE
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        self.hass, self._entry = hass, entry
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        subentry: ConfigSubentry | None = None,
+    ) -> None:
+        self.hass, self._entry, self._subentry = hass, entry, subentry
         self._access_token: str = entry.data[CONF_ACCESS_TOKEN]
-        self._peer_id: int = entry.data[CONF_PEER_ID]
+        self._peer_id: int = int(
+            subentry.data[CONF_PEER_ID] if subentry else entry.data[CONF_PEER_ID]
+        )
         self._verify_ssl: bool = entry.data.get(CONF_VERIFY_SSL, True)
         runtime = getattr(entry, "runtime_data", None)
         self._client: VkApiClient = (
@@ -72,14 +93,20 @@ class VkNotifyEntity(NotifyEntity):
         )
         self._last_message_id: int | None = None
         self._last_cmid: int | None = None
-        self._attr_unique_id = entry.entry_id
-        base_name = entry.data.get("name", "VK Notify")
+        self._attr_unique_id = (
+            f"{entry.entry_id}_{self._peer_id}" if subentry else entry.entry_id
+        )
+        base_name = (
+            subentry.data.get("name") if subentry else None
+        ) or entry.data.get("name", "VK Notify")
         self._attr_name = f"{base_name} {self._peer_id}"
+        dev_id = subentry.subentry_id if subentry else entry.entry_id
+        dev_name = subentry.title if subentry else (entry.title or self._attr_name)
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name=entry.title or self._attr_name,
+            identifiers={(DOMAIN, dev_id)},
+            name=dev_name,
             manufacturer="VK",
-            model=f"VK Bot API v{VK_API_VERSION}",
+            model=f"VK Chat ({self._peer_id})",
             entry_type=DeviceEntryType.SERVICE,
         )
 

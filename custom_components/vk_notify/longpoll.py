@@ -239,12 +239,18 @@ class VkLongPollManager:
 
     def _find_entity_id(self, peer_id: int) -> str | None:
         ent_reg = er.async_get(self._hass)
-        for entry_id, entry_data in self._hass.data.get(DOMAIN, {}).items():
-            if entry_id == "lp_managers" or not isinstance(entry_data, dict):
-                continue
-            if entry_data.get("data", {}).get(CONF_PEER_ID) == peer_id:
-                entities = er.async_entries_for_config_entry(ent_reg, entry_id)
-                return entities[0].entity_id if entities else None
+        suffix = f"_{peer_id}"
+        for entry in self._hass.config_entries.async_entries(DOMAIN):
+            entities = er.async_entries_for_config_entry(ent_reg, entry.entry_id)
+            for ent in entities:
+                if ent.unique_id.endswith(suffix):
+                    return ent.entity_id
+                if ent.config_subentry_id and ent.config_subentry_id in entry.subentries:
+                    sub = entry.subentries[ent.config_subentry_id]
+                    if sub.data.get(CONF_PEER_ID) == peer_id:
+                        return ent.entity_id
+            if entry.data.get(CONF_PEER_ID) == peer_id and len(entities) == 1:
+                return entities[0].entity_id
         return None
 
     async def _mark_as_read(self, peer_id: int, msg_id: int) -> None:
