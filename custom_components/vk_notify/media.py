@@ -761,6 +761,108 @@ async def async_upload_video(
     return f"video{owner_id}_{video_id}{'_' + access_key if access_key else ''}"
 
 
+def _normalize_str_list(value: str | list[str] | None) -> list[str]:
+    """Преобразует строку (или список строк) в плоский список непустых значений."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        items = [x.strip() for x in re.split(r"[\n,]+", value) if x.strip()]
+        return items
+    if isinstance(value, (list, tuple, set)):
+        result: list[str] = []
+        for elem in value:
+            if elem:
+                s = str(elem).strip()
+                if s:
+                    result.append(s)
+        return result
+    return [str(value).strip()]
+
+
+async def async_upload_photos(
+    hass: HomeAssistant,
+    access_token: str,
+    peer_id: int,
+    url: str | list[str] | None = None,
+    filepath: str | list[str] | None = None,
+    camera_entity: str | list[str] | None = None,
+    verify_ssl: bool = True,
+    timeout: int = 60,
+) -> str:
+    """Загружает от 1 до 10 фотографий (с камер HA, по URL или локальным путям) и возвращает строку attachment для ВК."""
+    cameras = _normalize_str_list(camera_entity)
+    urls = _normalize_str_list(url)
+    files = _normalize_str_list(filepath)
+
+    tasks: list[dict[str, str]] = []
+    for cam in cameras:
+        tasks.append({"camera_entity": cam})
+    for u in urls:
+        tasks.append({"url": u})
+    for f in files:
+        tasks.append({"filepath": f})
+
+    if not tasks:
+        raise HomeAssistantError(
+            "Для отправки фото укажите camera_entity, url или локальный путь file."
+        )
+
+    attachments: list[str] = []
+    for item in tasks[:10]:
+        att = await async_upload_photo(
+            hass,
+            access_token,
+            peer_id,
+            url=item.get("url"),
+            filepath=item.get("filepath"),
+            camera_entity=item.get("camera_entity"),
+            verify_ssl=verify_ssl,
+            timeout=timeout,
+        )
+        attachments.append(att)
+
+    return ",".join(attachments)
+
+
+async def async_upload_files(
+    hass: HomeAssistant,
+    access_token: str,
+    peer_id: int,
+    filepath: str | list[str] | None = None,
+    url: str | list[str] | None = None,
+    verify_ssl: bool = True,
+    timeout: int = 60,
+) -> str:
+    """Загружает от 1 до 10 документов (по локальным путям или URL) и возвращает строку attachment для ВК."""
+    files = _normalize_str_list(filepath)
+    urls = _normalize_str_list(url)
+
+    tasks: list[dict[str, str]] = []
+    for f in files:
+        tasks.append({"filepath": f})
+    for u in urls:
+        tasks.append({"url": u})
+
+    if not tasks:
+        raise HomeAssistantError("Neither filepath nor URL provided for file upload.")
+
+    attachments: list[str] = []
+    for item in tasks[:10]:
+        att = await async_upload_file(
+            hass,
+            access_token,
+            peer_id,
+            filepath=item.get("filepath"),
+            url=item.get("url"),
+            verify_ssl=verify_ssl,
+            timeout=timeout,
+        )
+        attachments.append(att)
+
+    return ",".join(attachments)
+
+
+
 
 
 

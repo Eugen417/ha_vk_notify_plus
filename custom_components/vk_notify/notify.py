@@ -38,8 +38,14 @@ from .const import (
     VK_API_VERSION,
     VK_API_WALL,
 )
-from .formatting import build_vk_keyboard, parse_vk_formatting
-from .media import async_upload_file, async_upload_photo, async_upload_video
+from .formatting import build_vk_keyboard, parse_vk_formatting, redact_vk_payload
+from .media import (
+    async_upload_file,
+    async_upload_files,
+    async_upload_photo,
+    async_upload_photos,
+    async_upload_video,
+)
 from .services import async_register_vk_services
 
 
@@ -86,20 +92,30 @@ class VkNotifyEntity(NotifyEntity):
         }
 
     async def _internal_send(
-        self, endpoint: str, params: dict[str, Any], timeout: int = 60
+        self,
+        endpoint: str,
+        params: dict[str, Any],
+        timeout: int = 60,
+        token_override: str | None = None,
     ) -> ServiceResponse:
         if endpoint == VK_API_SEND:
             params.update(
                 {"peer_ids": str(self._peer_id), "random_id": random.randint(0, 2**31 - 1)}
             )
             params.pop("peer_id", None)
-        else:
+        elif endpoint != VK_API_WALL:
             params.setdefault("peer_id", self._peer_id)
 
-        response = await self._client.async_request(endpoint, params, timeout=timeout)
+        response = await self._client.async_request(
+            endpoint, params, token_override=token_override, timeout=timeout
+        )
         if endpoint == VK_API_SEND and response is not None:
             msg = response[0] if isinstance(response, list) and response else response
             if isinstance(msg, dict):
+                if "error" in msg and msg["error"]:
+                    raise HomeAssistantError(
+                        f"VK API messages.send error: {redact_vk_payload(msg['error'])}"
+                    )
                 self._last_message_id = msg.get("message_id") or msg.get("id")
                 self._last_cmid = msg.get("conversation_message_id")
             else:
@@ -164,7 +180,7 @@ class VkNotifyEntity(NotifyEntity):
         )
         params: dict[str, Any] = {"message": clean_msg}
         timeout = kwargs.get("timeout", 60)
-        params["attachment"] = await async_upload_photo(
+        params["attachment"] = await async_upload_photos(
             self.hass,
             self._access_token,
             self._peer_id,
@@ -187,7 +203,7 @@ class VkNotifyEntity(NotifyEntity):
         timeout = kwargs.get("timeout", 60)
         params: dict[str, Any] = {
             "message": clean_msg,
-            "attachment": await async_upload_file(
+            "attachment": await async_upload_files(
                 self.hass,
                 self._access_token,
                 self._peer_id,
@@ -260,17 +276,33 @@ class VkNotifyEntity(NotifyEntity):
 
     async def async_edit_message(self, message: str, **kwargs: Any) -> None:
         clean_msg, fmt_data = parse_vk_formatting(message, kwargs.get("parse_mode", "html"))
-        params: dict[str, Any] = {"message": clean_msg}
+        params: dict[str, Any] = {
+            "message": clean_msg,
+            "keep_forward_messages": 1,
+            "keep_snippets": 1,
+        }
         if fmt_data:
             params["format_data"] = fmt_data
         if "attachment" in kwargs:
             params["attachment"] = kwargs["attachment"]
         if "keyboard" in kwargs:
-            params["keyboard"] = json.dumps(kwargs["keyboard"], ensure_ascii=False)
+            params["keyboard"] = build_vk_keyboard(
+                kwargs["keyboard"],
+                inline_keyboard=kwargs.get("inline_keyboard"),
+                auto_answer_callback=kwargs.get("auto_answer_callback", True),
+            )
         if kwargs.get("message_id"):
             params["message_id"] = int(kwargs["message_id"])
         elif kwargs.get("conversation_message_id"):
             params["conversation_message_id"] = int(kwargs["conversation_message_id"])
+        elif self._last_cmid:
+            params["conversation_message_id"] = int(self._last_cmid)
+        elif self._last_message_id:
+            params["message_id"] = int(self._last_message_id)
+        else:
+            raise HomeAssistantError(
+                "Для редактирования сообщения укажите conversation_message_id или message_id."
+            )
         if kwargs.get("disable_mentions"):
             params["disable_mentions"] = 1
         await self._internal_send(VK_API_EDIT, params)
@@ -278,7 +310,10 @@ class VkNotifyEntity(NotifyEntity):
     async def async_wall_post(self, **kwargs: Any) -> ServiceResponse:
         group_id = (
             self._entry.data.get(CONF_GROUP_ID)
-            or self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {}).get("data", {}).get(CONF_GROUP_ID)
+            or self.hass.data.get(DOMAIN, {})
+            .get(self._entry.entry_id, {})
+            .get("data", {})
+            .get(CONF_GROUP_ID)
         )
         if not group_id:
             raise HomeAssistantError(
@@ -287,9 +322,13 @@ class VkNotifyEntity(NotifyEntity):
         clean_msg, _ = parse_vk_formatting(
             kwargs.get("message", ""), kwargs.get("parse_mode", "html")
         )
-        params: dict[str, Any] = {"owner_id": f"-{group_id}", "message": clean_msg}
+        params: dict[str, Any] = {
+            "owner_id": f"-{group_id}",
+            "from_group": 1 if kwargs.get("from_group", True) else 0,
+            "message": clean_msg,
+        }
         if kwargs.get("file") or kwargs.get("url"):
-            params["attachments"] = await async_upload_file(
+            params["attachments"] = await async_upload_files(
                 self.hass,
                 self._access_token,
                 self._peer_id,
@@ -297,23 +336,49 @@ class VkNotifyEntity(NotifyEntity):
                 url=kwargs.get("url"),
                 verify_ssl=self._verify_ssl,
             )
-        return await self._internal_send(VK_API_WALL, params)
+        user_token = (self._entry.data.get(CONF_VIDEO_ACCESS_TOKEN) or "").strip() or None
+        return await self._internal_send(
+            VK_API_WALL, params, token_override=user_token
+        )
 
-    async def async_delete_message(self, **kwargs) -> None:
-        params = {"delete_for_all": 1}
-        if kwargs.get("message_id"): params["message_ids"] = int(kwargs["message_id"])
-        if kwargs.get("conversation_message_id"): params["cmids"] = int(kwargs["conversation_message_id"])
+    async def async_delete_message(self, **kwargs: Any) -> None:
+        params: dict[str, Any] = {"delete_for_all": 1}
+        if kwargs.get("message_id"):
+            params["message_ids"] = int(kwargs["message_id"])
+        elif kwargs.get("conversation_message_id"):
+            params["cmids"] = int(kwargs["conversation_message_id"])
+        elif self._last_cmid:
+            params["cmids"] = int(self._last_cmid)
+        elif self._last_message_id:
+            params["message_ids"] = int(self._last_message_id)
+        else:
+            raise HomeAssistantError(
+                "Для удаления сообщения укажите conversation_message_id или message_id."
+            )
         await self._internal_send(VK_API_DELETE, params)
 
-    async def async_send_reaction(self, conversation_message_id: Any, reaction_id: Any, **kwargs) -> None:
+    async def async_send_reaction(
+        self, conversation_message_id: Any, reaction_id: Any, **kwargs: Any
+    ) -> None:
         cmid = int(conversation_message_id) if conversation_message_id else 0
-        if cmid == 0: raise HomeAssistantError("Cannot send reaction: conversation_message_id is missing or 0")
-        await self._internal_send(VK_API_REACTION, {"cmid": cmid, "reaction_id": int(reaction_id)})
+        if cmid == 0:
+            raise HomeAssistantError(
+                "Cannot send reaction: conversation_message_id is missing or 0"
+            )
+        await self._internal_send(
+            VK_API_REACTION, {"cmid": cmid, "reaction_id": int(reaction_id)}
+        )
 
-    async def async_pin_message(self, **kwargs) -> None:
-        params = {}
-        if kwargs.get("message_id"): params["message_id"] = int(kwargs["message_id"])
-        elif kwargs.get("conversation_message_id"): params["conversation_message_id"] = int(kwargs["conversation_message_id"])
+    async def async_pin_message(self, **kwargs: Any) -> None:
+        params: dict[str, Any] = {}
+        if kwargs.get("message_id"):
+            params["message_id"] = int(kwargs["message_id"])
+        elif kwargs.get("conversation_message_id"):
+            params["conversation_message_id"] = int(kwargs["conversation_message_id"])
+        elif self._last_cmid:
+            params["conversation_message_id"] = int(self._last_cmid)
+        elif self._last_message_id:
+            params["message_id"] = int(self._last_message_id)
         await self._internal_send(VK_API_PIN, params)
 
     async def async_unpin_message(self, **kwargs) -> None:

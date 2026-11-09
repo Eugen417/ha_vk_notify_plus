@@ -145,11 +145,12 @@ send_photo:
               value: plain
     camera_entity:
       name: Камера Home Assistant
-      description: "Сущность камеры (например, camera.front_door) для мгновенной отправки снимка напрямую без сохранения на диск."
+      description: "Одна или несколько камер (до 10 шт., например camera.front_door) для мгновенной отправки снимков одним сообщением (альбомом) без сохранения на диск."
       required: false
       selector:
         entity:
           domain: camera
+          multiple: true
     file:
       name: Локальный путь к файлу или media-source://
       description: Например, /config/www/image.jpg или media-source://...

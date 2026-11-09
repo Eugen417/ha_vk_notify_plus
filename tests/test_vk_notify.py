@@ -180,6 +180,19 @@ class TestVkNotify(unittest.TestCase):
         self.assertEqual(parsed[0]["url"], "https://vk.com/hd.jpg")
         self.assertEqual(transcript, "включи свет в гостиной")
 
+    def test_normalize_str_list_for_multi_upload(self) -> None:
+        norm = self.media["_normalize_str_list"]
+        self.assertEqual(norm(None), [])
+        self.assertEqual(norm("/config/www/1.jpg"), ["/config/www/1.jpg"])
+        self.assertEqual(
+            norm("/config/www/1.jpg, /config/www/2.jpg\n/config/www/3.jpg"),
+            ["/config/www/1.jpg", "/config/www/2.jpg", "/config/www/3.jpg"],
+        )
+        self.assertEqual(
+            norm(["camera.front", "camera.back"]),
+            ["camera.front", "camera.back"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

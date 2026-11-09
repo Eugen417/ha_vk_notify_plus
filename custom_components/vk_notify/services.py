@@ -10,6 +10,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import EntityPlatform
 
 INT_STR = vol.Any(cv.positive_int, cv.string)
+STR_OR_LIST = vol.Any(cv.string, [cv.string])
 PARSE_MODE_VALIDATOR = vol.In(["html", "markdown", "markdownv2", "plain"])
 
 COMMON_FIELDS = {
@@ -34,16 +35,16 @@ SCHEMA_SEND_MESSAGE = {
 }
 
 SCHEMA_SEND_PHOTO = {
-    vol.Optional("url"): cv.string,
-    vol.Optional("file"): cv.string,
-    vol.Optional("camera_entity"): cv.entity_id,
+    vol.Optional("url"): STR_OR_LIST,
+    vol.Optional("file"): STR_OR_LIST,
+    vol.Optional("camera_entity"): cv.entity_ids,
     vol.Optional("message"): cv.string,
     **COMMON_FIELDS,
 }
 
 SCHEMA_SEND_FILE = {
-    vol.Optional("file"): cv.string,
-    vol.Optional("url"): cv.string,
+    vol.Optional("file"): STR_OR_LIST,
+    vol.Optional("url"): STR_OR_LIST,
     vol.Optional("message"): cv.string,
     **COMMON_FIELDS,
 }
@@ -68,14 +69,17 @@ SCHEMA_EDIT_MESSAGE = {
     vol.Optional("conversation_message_id"): INT_STR,
     vol.Optional("attachment"): cv.string,
     vol.Optional("keyboard"): dict,
+    vol.Optional("inline_keyboard"): cv.boolean,
+    vol.Optional("auto_answer_callback", default=True): cv.boolean,
     vol.Optional("disable_mentions"): cv.boolean,
     vol.Optional("parse_mode", default="html"): PARSE_MODE_VALIDATOR,
 }
 
 SCHEMA_WALL_POST = {
     vol.Optional("message"): cv.string,
-    vol.Optional("file"): cv.string,
-    vol.Optional("url"): cv.string,
+    vol.Optional("file"): STR_OR_LIST,
+    vol.Optional("url"): STR_OR_LIST,
+    vol.Optional("from_group", default=True): cv.boolean,
 }
 
 SCHEMA_DELETE_MESSAGE = {

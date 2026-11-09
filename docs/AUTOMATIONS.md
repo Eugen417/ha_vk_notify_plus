@@ -1005,13 +1005,15 @@ data:
 Служба `send_photo` умеет снимать кадр напрямую с сущности `camera.*` в памяти, а также автоматически определяет MIME-тип изображения (`JPEG`, `PNG`, `GIF`, `WebP`, `BMP`) по содержимому файла и заголовкам ответа.
 
 ```yaml
-# Мгновенная отправка снимка напрямую с камеры Home Assistant (без сохранения на диск)
+# Мгновенная отправка снимков сразу с нескольких камер Home Assistant одним сообщением (альбомом)
 action: vk_notify.send_photo
 target:
   entity_id: notify.vk_notify_2000001234
 data:
-  camera_entity: camera.front_door
-  message: "📷 Снимок с камеры входной двери"
+  camera_entity:
+    - camera.front_door
+    - camera.backyard
+  message: "📷 Снимки с камер периметра"
 ```
 
 ```yaml
