@@ -14,6 +14,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CONF_PEER_ID, DOMAIN, VK_API_LONGPOLL_SERVER, VK_API_MARK_AS_READ, VK_API_VERSION
+from .helpers import redact_sensitive_text, redact_vk_payload
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class VkLongPollManager:
         ) as resp:
             data = await resp.json(content_type=None)
         if "error" in data:
-            raise RuntimeError(f"VK API Error: {data['error']}")
+            raise RuntimeError(f"VK API Error: {redact_vk_payload(data['error'])}")
         r = data["response"]
         return r["server"], r["key"], r["ts"]
 
@@ -81,7 +82,7 @@ class VkLongPollManager:
             except asyncio.TimeoutError:
                 continue
             except Exception as err:
-                _LOGGER.warning("VK LP error: %s. Reconnecting in 5s...", err)
+                _LOGGER.warning("VK LP error: %s. Reconnecting in 5s...", redact_sensitive_text(err))
                 server = None
                 await asyncio.sleep(5)
 

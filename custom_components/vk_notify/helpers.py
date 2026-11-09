@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+from typing import Any
 from urllib.parse import unquote, urljoin, urlparse
 
 import aiohttp
@@ -95,6 +96,86 @@ def is_local_url(url: str) -> bool:
         return ipaddress.ip_address(host).is_private
     except ValueError:
         return False
+
+
+_SENSITIVE_QUERY_RE = re.compile(
+    r"((?:access_token|video_access_token|token|api_key|apikey|key|hash|rhash|secret|sig|sign|password|passwd|pwd)\s*[=:]\s*)([^&\s\"',;})\]>]+)",
+    flags=re.IGNORECASE,
+)
+_URL_AUTH_RE = re.compile(r"(https?://[^/\s:@]+:)([^@\s/]+)(@)", flags=re.IGNORECASE)
+_VK_TOKEN_RE = re.compile(r"\bvk1\.a\.[A-Za-z0-9_\-.]{12,}\b")
+_HEX_TOKEN_RE = re.compile(r"\b[a-fA-F0-9]{64,}\b")
+
+_SENSITIVE_DICT_KEYS = {
+    "access_token",
+    "video_access_token",
+    "token",
+    "key",
+    "hash",
+    "rhash",
+    "secret",
+    "sig",
+    "sign",
+    "password",
+    " peer_id",
+    "peer_id",
+    "peer_ids",
+    "user_id",
+    "user_ids",
+    "group_id",
+}
+
+
+def redact_sensitive_text(value: Any) -> str:
+    """Маскирует токены, пароли, хэши и ключи в URL и текстах ошибок для безопасной публикации логов."""
+    text = str(value)
+    if not text:
+        return text
+    text = _URL_AUTH_RE.sub(r"\1***REDACTED***\3", text)
+    text = _VK_TOKEN_RE.sub("vk1.a.***REDACTED***", text)
+    text = _HEX_TOKEN_RE.sub("***REDACTED_HEX***", text)
+    text = _SENSITIVE_QUERY_RE.sub(r"\1***REDACTED***", text)
+    return text
+
+
+def redact_vk_payload(data: Any) -> Any:
+    """Рекурсивно маскирует чувствительные поля в ответах и ошибках VK API."""
+    if isinstance(data, dict):
+        sanitized: dict[str, Any] = {}
+        for k, v in data.items():
+            k_lower = str(k).lower()
+            if k_lower in ("access_token", "video_access_token", "token", "key", "hash", "rhash", "secret", "sig", "sign"):
+                sanitized[k] = "***REDACTED***" if v else ""
+            elif k_lower in ("peer_id", "peer_ids", "user_id", "user_ids", "group_id"):
+                s = str(v)
+                sanitized[k] = f"{s[:2]}***{s[-2:]}" if len(s) > 4 else "***"
+            elif k_lower == "request_params" and isinstance(v, list):
+                params_clean = []
+                for item in v:
+                    if isinstance(item, dict) and "key" in item:
+                        ik = str(item["key"]).lower()
+                        iv = item.get("value")
+                        if ik in _SENSITIVE_DICT_KEYS:
+                            s_iv = str(iv)
+                            masked_iv = (
+                                f"{s_iv[:2]}***{s_iv[-2:]}"
+                                if ik in ("peer_id", "peer_ids", "user_id", "user_ids", "group_id") and len(s_iv) > 4
+                                else "***REDACTED***"
+                            )
+                            params_clean.append({"key": item["key"], "value": masked_iv})
+                        else:
+                            params_clean.append(item)
+                    else:
+                        params_clean.append(redact_vk_payload(item))
+                sanitized[k] = params_clean
+            else:
+                sanitized[k] = redact_vk_payload(v)
+        return sanitized
+    if isinstance(data, list):
+        return [redact_vk_payload(x) for x in data]
+    if isinstance(data, str):
+        return redact_sensitive_text(data)
+    return data
 
 # ==========================================
 # 1. ФУНКЦИИ ФОРМАТИРОВАНИЯ ТЕКСТА
@@ -308,7 +389,7 @@ async def _post_multipart_to_vk(
         )
 
     safe_url = current_url.split("?")[0]
-    body_preview = raw_text.strip()[:250]
+    body_preview = redact_sensitive_text(raw_text.strip()[:250])
 
     if status == 405:
         _LOGGER.error(
@@ -414,11 +495,15 @@ async def async_upload_photo(
         except HomeAssistantError:
             raise
         except Exception as err:
-            _LOGGER.error("Ошибка скачивания фото по URL %s: %s", clean_url, err)
-            raise HomeAssistantError(f"Failed to download image: {err}") from err
+            safe_dl_url = redact_sensitive_text(clean_url)
+            safe_err = redact_sensitive_text(err)
+            _LOGGER.error("Ошибка скачивания фото по URL %s: %s", safe_dl_url, safe_err)
+            raise HomeAssistantError(f"Failed to download image: {safe_err}") from err
 
         if not file_bytes:
-            raise HomeAssistantError(f"Скачанное по URL изображение пустое (0 байт): {clean_url}")
+            raise HomeAssistantError(
+                f"Скачанное по URL изображение пустое (0 байт): {redact_sensitive_text(clean_url)}"
+            )
 
         magic_mime = _detect_magic_image_mime(file_bytes)
         header_mime = (header_ct or "").split(";", 1)[0].strip().lower()
@@ -426,7 +511,7 @@ async def async_upload_photo(
             header_mime in ("text/html", "text/plain", "application/json")
             or file_bytes.lstrip()[:15].lower().startswith((b"<!doctype", b"<html"))
         ):
-            preview = file_bytes[:200].decode("utf-8", errors="replace").strip()
+            preview = redact_sensitive_text(file_bytes[:200].decode("utf-8", errors="replace").strip())
             raise HomeAssistantError(
                 f"По URL получено не изображение (Content-Type: {header_ct or 'неизвестен'}): {preview}"
             )
@@ -455,11 +540,13 @@ async def async_upload_photo(
     ) as resp:
         data = await resp.json(content_type=None)
     if "error" in data:
-        raise HomeAssistantError(f"VK API error (getUploadServer): {data['error']}")
+        raise HomeAssistantError(
+            f"VK API error (getUploadServer): {redact_vk_payload(data['error'])}"
+        )
 
     upload_url = data.get("response", {}).get("upload_url")
     if not upload_url:
-        raise HomeAssistantError(f"VK API did not return upload_url: {data}")
+        raise HomeAssistantError(f"VK API did not return upload_url: {redact_vk_payload(data)}")
 
     def _build_form() -> aiohttp.FormData:
         form = aiohttp.FormData()
@@ -484,15 +571,16 @@ async def async_upload_photo(
 
     photo_payload = upload_result.get("photo")
     if "error" in upload_result or not photo_payload or photo_payload == "[]":
+        safe_result = redact_vk_payload(upload_result)
         _LOGGER.error(
             "VK photo upload returned empty/error photo field (filename=%s, content_type=%s, size=%d): %s",
             filename,
             content_type,
             len(file_bytes),
-            upload_result,
+            safe_result,
         )
         raise HomeAssistantError(
-            f"Photo upload error (file={filename}, mime={content_type}, size={len(file_bytes)} B): {upload_result}"
+            f"Photo upload error (file={filename}, mime={content_type}, size={len(file_bytes)} B): {safe_result}"
         )
 
     async with vk_session.post(
@@ -509,7 +597,9 @@ async def async_upload_photo(
         data = await resp.json(content_type=None)
 
     if "error" in data:
-        raise HomeAssistantError(f"VK API error (saveMessagesPhoto): {data['error']}")
+        raise HomeAssistantError(
+            f"VK API error (saveMessagesPhoto): {redact_vk_payload(data['error'])}"
+        )
 
     photo = data["response"][0]
     access_key = photo.get("access_key", "")
@@ -551,11 +641,13 @@ async def async_upload_file(
     ) as resp:
         data = await resp.json(content_type=None)
     if "error" in data:
-        raise HomeAssistantError(f"VK API error (getUploadServer): {data['error']}")
+        raise HomeAssistantError(
+            f"VK API error (getUploadServer): {redact_vk_payload(data['error'])}"
+        )
 
     upload_url = data.get("response", {}).get("upload_url")
     if not upload_url:
-        raise HomeAssistantError(f"VK API did not return doc upload_url: {data}")
+        raise HomeAssistantError(f"VK API did not return doc upload_url: {redact_vk_payload(data)}")
 
     def _build_form() -> aiohttp.FormData:
         form = aiohttp.FormData()
@@ -579,7 +671,9 @@ async def async_upload_file(
     )
 
     if "error" in upload_result or not upload_result.get("file"):
-        raise HomeAssistantError(f"Document upload error (file={filename}): {upload_result}")
+        raise HomeAssistantError(
+            f"Document upload error (file={filename}): {redact_vk_payload(upload_result)}"
+        )
 
     async with vk_session.get(
         VK_API_DOC_SAVE,
@@ -593,7 +687,7 @@ async def async_upload_file(
     ) as resp:
         data = await resp.json(content_type=None)
     if "error" in data:
-        raise HomeAssistantError(f"VK API error (docs.save): {data['error']}")
+        raise HomeAssistantError(f"VK API error (docs.save): {redact_vk_payload(data['error'])}")
 
     response = data["response"]
     obj = response.get("doc") or response.get("audio_message")
@@ -638,8 +732,10 @@ async def async_upload_video(
         except HomeAssistantError:
             raise
         except Exception as err:
-            _LOGGER.error("Ошибка скачивания видео по URL %s: %s", clean_url, err)
-            raise HomeAssistantError(f"Failed to download video: {err}") from err
+            safe_dl_url = redact_sensitive_text(clean_url)
+            safe_err = redact_sensitive_text(err)
+            _LOGGER.error("Ошибка скачивания видео по URL %s: %s", safe_dl_url, safe_err)
+            raise HomeAssistantError(f"Failed to download video: {safe_err}") from err
     elif filepath:
         clean_path = filepath.strip()
         if not hass.config.is_allowed_path(clean_path):
@@ -668,7 +764,7 @@ async def async_upload_video(
         data = await resp.json(content_type=None)
 
     if "error" in data:
-        raise HomeAssistantError(f"VK API error (video.save): {data['error']}")
+        raise HomeAssistantError(f"VK API error (video.save): {redact_vk_payload(data['error'])}")
 
     upload_url = data["response"]["upload_url"]
     owner_id = data["response"]["owner_id"]

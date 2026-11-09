@@ -21,7 +21,14 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_ACCESS_TOKEN, CONF_GROUP_ID, CONF_PEER_ID, CONF_VERIFY_SSL, DOMAIN, VK_API_VERSION
-from .helpers import async_upload_file, async_upload_photo, async_upload_video, parse_vk_formatting
+from .helpers import (
+    async_upload_file,
+    async_upload_photo,
+    async_upload_video,
+    parse_vk_formatting,
+    redact_sensitive_text,
+    redact_vk_payload,
+)
 
 VK_API_SEND = "https://api.vk.com/method/messages.send"
 VK_API_EDIT = "https://api.vk.com/method/messages.edit"
@@ -99,7 +106,7 @@ class VkNotifyEntity(NotifyEntity):
             async with session.post(endpoint, data=params, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
                 res = await resp.json(content_type=None)
                 if "error" in res:
-                    raise HomeAssistantError(f"VK API Error: {res['error']}")
+                    raise HomeAssistantError(f"VK API Error: {redact_vk_payload(res['error'])}")
                 if endpoint == VK_API_SEND and "response" in res:
                     msg = res["response"][0] if isinstance(res["response"], list) else res["response"]
                     if isinstance(msg, dict):
@@ -114,7 +121,7 @@ class VkNotifyEntity(NotifyEntity):
         except HomeAssistantError:
             raise
         except Exception as err:
-            raise HomeAssistantError(f"VK request error: {err}") from err
+            raise HomeAssistantError(f"VK request error: {redact_sensitive_text(err)}") from err
 
     def _prepare_reply(self, params: dict, reply_to: Any | None) -> None:
         if not reply_to:
