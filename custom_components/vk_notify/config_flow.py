@@ -220,7 +220,9 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=STEP_TOKEN_SCHEMA,
             errors=errors,
             description_placeholders={
-                "docs_url": "https://github.com/Eugen417/ha_vk_notify_plus/blob/main/docs/SETUP_GUIDE.md"
+                "vk_groups_url": "https://vk.com/groups?tab=admin",
+                "docs_url": "https://github.com/Eugen417/ha_vk_notify_plus/blob/main/docs/SETUP_GUIDE.md",
+                "video_docs_url": "https://github.com/Eugen417/ha_vk_notify_plus/blob/main/docs/VIDEO_TOKEN_GUIDE.md",
             },
         )
 
