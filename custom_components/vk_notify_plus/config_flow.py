@@ -1,5 +1,5 @@
 """
-VK Notify config_flow.py v1.7.0
+VK Notify config_flow.py v1.0.0
 Added: Optional video_access_token storage (masked password field) and mode switching in reconfigure.
 """
 
@@ -39,7 +39,7 @@ PASSWORD_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWO
 STEP_TOKEN_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_ACCESS_TOKEN): PASSWORD_SELECTOR,
-        vol.Optional("name", default="VK Notify"): str,
+        vol.Optional("name", default="VK Notify Plus"): str,
         vol.Optional(CONF_VIDEO_ACCESS_TOKEN, default=""): PASSWORD_SELECTOR,
         vol.Optional(CONF_VERIFY_SSL, default=True): bool,
     }
@@ -152,7 +152,7 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         self._access_token: str = ""
         self._video_access_token: str = ""
-        self._name: str = "VK Notify"
+        self._name: str = "VK Notify Plus"
         self._mode: str = MODE_API
         self._group_id: int | None = None
         self._verify_ssl: bool = True
@@ -176,7 +176,7 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     self._video_access_token = (
                         user_input.get(CONF_VIDEO_ACCESS_TOKEN) or ""
                     ).strip()
-                    self._name = user_input.get("name", "VK Notify")
+                    self._name = user_input.get("name", "VK Notify Plus")
                     self._verify_ssl = verify_ssl
                     self._group_id = await _detect_group_id(
                         self.hass, self._access_token, verify_ssl=verify_ssl
@@ -188,7 +188,7 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=STEP_TOKEN_SCHEMA,
             errors=errors,
             description_placeholders={
-                "docs_url": "https://udocs.ru/posts/home-assistant/integrations/otpravka-uvedomleniy-v-vk"
+                "docs_url": "https://github.com/Eugen417/vk_notify_plus/blob/main/docs/SETUP_GUIDE.md"
             },
         )
 
@@ -314,7 +314,7 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "longpoll_no_access"
             else:
                 chat_label = all_options.get(peer_id_str, f"Чат {peer_id_str}")
-                base_name = entry.data.get("name", "VK Notify")
+                base_name = entry.data.get("name", "VK Notify Plus")
                 updated_data = {
                     **entry.data,
                     CONF_PEER_ID: int(peer_id_str),

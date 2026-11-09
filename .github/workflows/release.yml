@@ -31,7 +31,7 @@ jobs:
 
           payload = json.dumps({
               "tag_name": tag,
-              "name": f"VK Notify {tag}",
+              "name": f"VK Notify Plus {tag}",
               "body": f"Release {tag}",
               "draft": False,
               "prerelease": False,

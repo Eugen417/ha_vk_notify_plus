@@ -1,4 +1,4 @@
-"""Unit tests for VK Notify v1.7.0 (formatting, redaction, MIME detection, LongPoll attachments)."""
+"""Unit tests for VK Notify v1.0.0 (formatting, redaction, MIME detection, LongPoll attachments)."""
 from __future__ import annotations
 
 import ast
@@ -9,7 +9,7 @@ import types
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PKG_DIR = ROOT / "custom_components" / "vk_notify"
+PKG_DIR = ROOT / "custom_components" / "vk_notify_plus"
 
 
 def _load_module_ast(filename: str, extra_globals: dict | None = None) -> dict:

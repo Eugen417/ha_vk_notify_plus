@@ -1,5 +1,5 @@
 """
-VK Notify formatting.py v1.7.0
+VK Notify formatting.py v1.0.0
 Text formatting (HTML/Markdown/MarkdownV2 -> VK format_data), keyboard/reply builders,
 and sensitive data redaction for logs and error messages.
 """

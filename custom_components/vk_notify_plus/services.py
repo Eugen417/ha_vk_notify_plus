@@ -1,5 +1,5 @@
 """
-VK Notify services.py v1.7.0
+VK Notify services.py v1.0.0
 Voluptuous schemas and entity service registration for VK Notify.
 """
 from __future__ import annotations

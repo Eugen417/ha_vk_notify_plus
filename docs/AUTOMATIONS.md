@@ -7,9 +7,9 @@
   <summary><b>👨‍💻 Показать код YAML</b></summary>
 
 ```yaml
-action: vk_notify.send_message
+action: vk_notify_plus.send_message
 target:
-  entity_id: notify.vk_notify_2000001234
+  entity_id: notify.vk_notify_plus_2000001234
 data:
   message: "Выберите устройство:"
   keyboard:
@@ -44,9 +44,9 @@ alias: "Пульт управления светом и картой"
 description: "Отправка сообщений с разными типами кнопок"
 mode: single
 actions:
-  - action: vk_notify.send_message
+  - action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       message: "🎛 Пульт управления светом:"
       keyboard:
@@ -67,9 +67,9 @@ actions:
                 label: "Выключить всё 🌑"
                 payload: '{"action": "all_off"}'
               color: negative
-  - action: vk_notify.send_message
+  - action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       message: "Нажми на кнопку, чтобы увидеть объект на карте:"
       keyboard:
@@ -95,7 +95,7 @@ description: "Реагирует на нажатия callback-кнопок из 
 mode: parallel
 triggers:
   - trigger: event
-    event_type: vk_notify_callback
+    event_type: vk_notify_plus_callback
     event_data:
       peer_id: 2000001234  # <--- Фильтр: реагировать только на нажатия в этом чате
 actions:
@@ -119,7 +119,7 @@ actions:
 </details>
 
 ### 4. Реакция на текстовые команды
-Если вы нажали кнопку типа `text` или просто написали в чат сообщение со слэшем (например, `/status`), Home Assistant сгенерирует событие `vk_notify_command`. Вот как на него ответить:
+Если вы нажали кнопку типа `text` или просто написали в чат сообщение со слэшем (например, `/status`), Home Assistant сгенерирует событие `vk_notify_plus_command`. Вот как на него ответить:
 
 <details>
   <summary><b>👨‍💻 Показать код YAML</b></summary>
@@ -130,14 +130,14 @@ description: "Отвечает на команду /status"
 mode: single
 triggers:
   - trigger: event
-    event_type: vk_notify_command
+    event_type: vk_notify_plus_command
     event_data:
       command: status  # <--- Указываем команду без слэша
       peer_id: 2000001234
 actions:
-  - action: vk_notify.send_message
+  - action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       message: "🟢 Все системы работают в штатном режиме!"
 ```
@@ -158,7 +158,7 @@ max: 10
 triggers:
   # Триггер 1: Пользователь написал /пульт
   - trigger: event
-    event_type: vk_notify_command
+    event_type: vk_notify_plus_command
     event_data:
       command: пульт
       peer_id: 2000001234
@@ -166,7 +166,7 @@ triggers:
 
   # Триггер 2: Пользователь нажал невидимую кнопку callback
   - trigger: event
-    event_type: vk_notify_callback
+    event_type: vk_notify_plus_callback
     event_data:
       peer_id: 2000001234
     id: button_pressed
@@ -178,9 +178,9 @@ actions:
           - condition: trigger
             id: call_remote
         sequence:
-          - action: vk_notify.send_message
+          - action: vk_notify_plus.send_message
             target:
-              entity_id: notify.vk_notify_2000001234
+              entity_id: notify.vk_notify_plus_2000001234
             data:
               message: "🎛 **Главный пульт управления**"
               keyboard:
@@ -215,9 +215,9 @@ actions:
                   - delay: "00:00:01"
                   
                   # 3. Редактируем сообщение (меняем цвет и текст)
-                  - action: vk_notify.edit_message
+                  - action: vk_notify_plus.edit_message
                     target:
-                      entity_id: notify.vk_notify_2000001234
+                      entity_id: notify.vk_notify_plus_2000001234
                     data:
                       conversation_message_id: "{{ trigger.event.data.conversation_message_id }}"
                       message: "🎛 **Главный пульт управления**"
@@ -248,7 +248,7 @@ alias: "VK: Закрытие пульта"
 description: "Удаляет сообщение с пультом при нажатии на кнопку закрытия"
 triggers:
   - trigger: event
-    event_type: vk_notify_callback
+    event_type: vk_notify_plus_callback
     event_data:
       peer_id: 2000001234
 actions:
@@ -258,9 +258,9 @@ actions:
             # Предполагается, что на пульте есть кнопка с payload: '{"action": "close_remote"}'
             value_template: "{{ trigger.event.data.payload.action == 'close_remote' }}"
         sequence:
-          - action: vk_notify.delete_message
+          - action: vk_notify_plus.delete_message
             target:
-              entity_id: notify.vk_notify_2000001234
+              entity_id: notify.vk_notify_plus_2000001234
             data:
               # Берем ID сообщения прямо из клика по кнопке
               conversation_message_id: "{{ trigger.event.data.conversation_message_id }}"
@@ -283,20 +283,20 @@ actions:
 ```yaml
 alias: "VK: Быстрое удаление"
 actions:
-  - action: vk_notify.send_message
+  - action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       message: "⏳ Завариваю кофе..."
       
   - delay: "00:00:05" # Короткая задержка безопасна
   
-  - action: vk_notify.delete_message
+  - action: vk_notify_plus.delete_message
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       # Просто берем ID из атрибута:
-      message_id: "{{ state_attr('notify.vk_notify_2000001234', 'last_message_id') }}"
+      message_id: "{{ state_attr('notify.vk_notify_plus_2000001234', 'last_message_id') }}"
 ```
 </details>
 
@@ -310,9 +310,9 @@ actions:
 alias: "VK: Надежный таймер (1 час)"
 actions:
   # 1. Отправляем и кладем ответ ВК в локальную переменную sent_result
-  - action: vk_notify.send_message
+  - action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       message: "👕 Стиральная машина закончила стирку!"
     response_variable: sent_result
@@ -327,9 +327,9 @@ actions:
       - condition: template
         value_template: "{{ bot_msg_id > 0 }}"
     then:
-      - action: vk_notify.delete_message
+      - action: vk_notify_plus.delete_message
         target:
-          entity_id: notify.vk_notify_2000001234
+          entity_id: notify.vk_notify_plus_2000001234
         data:
           message_id: "{{ bot_msg_id }}"
 
@@ -349,17 +349,17 @@ description: Бот отвечает только на команду /пинг 
 mode: parallel
 trigger:
   - platform: event
-    event_type: vk_notify_command
+    event_type: vk_notify_plus_command
     event_data:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
 condition:
   - condition: template
     value_template: >-
       {{ trigger.event.data.get('command', '') | lower in ['пинг', 'ping'] }}
 action:
-  - action: vk_notify.send_message
+  - action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: 🏓 Понг! Бот на связи и умеет отвечать на сообщения.
       reply_to: "{{ trigger.event.data.get('conversation_message_id') }}"
@@ -379,16 +379,16 @@ description: "Возвращает имя, статус онлайна и вре
 mode: parallel
 triggers:
   - trigger: event
-    event_type: vk_notify_command
+    event_type: vk_notify_plus_command
 conditions:
   - condition: template
     value_template: >-
       {{ 'онлайн' in trigger.event.data.get('command', '') | lower or 'онлайн'
       in trigger.event.data.get('text', '') | lower }}
 actions:
-  - action: vk_notify.get_user_info
+  - action: vk_notify_plus.get_user_info
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       user_id: "1234567"  # замените на нужный VK ID
     response_variable: vk_user
@@ -405,9 +405,9 @@ actions:
         {% else %}
           Скрыто настройками приватности
         {% endif %}
-  - action: vk_notify.send_message
+  - action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       message: |
         🕵️‍♂️ **Досье пользователя:**
@@ -430,14 +430,14 @@ alias: "VK Тест 3: Шпион (Динамический с временем)
 mode: parallel
 triggers:
   - trigger: event
-    event_type: vk_notify_command
+    event_type: vk_notify_plus_command
 conditions:
   - condition: template
     value_template: "{{ 'онлайн' in trigger.event.data.get('command', '') | lower }}"
 actions:
-  - action: vk_notify.get_user_info
+  - action: vk_notify_plus.get_user_info
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       user_id: "{{ trigger.event.data.from_id }}"
     response_variable: vk_user
@@ -454,9 +454,9 @@ actions:
         {% else %}
           Скрыто настройками приватности
         {% endif %}
-  - action: vk_notify.send_message
+  - action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000001234
+      entity_id: notify.vk_notify_plus_2000001234
     data:
       message: |
         🕵️‍♂️ **Результат пробива:**
@@ -469,9 +469,9 @@ actions:
 </details>
 
 ### 11. Двусторонняя связь (Тестовый пример)
-Наглядная автоматизация для проверки событий `vk_notify_typing` (набор текста) и `vk_notify_read` (прочтение). 
+Наглядная автоматизация для проверки событий `vk_notify_plus_typing` (набор текста) и `vk_notify_plus_read` (прочтение). 
 
-⚠️ **ВАЖНОЕ ОГРАНИЧЕНИЕ VK API:** События о прочтении сообщений (`vk_notify_read`) работают **только в личных диалогах с ботом**. ВКонтакте не отправляет ботам статусы прочтения из общих бесед. Тестируйте эту автоматизацию в диалоге тет-а-тет с вашим сообществом!
+⚠️ **ВАЖНОЕ ОГРАНИЧЕНИЕ VK API:** События о прочтении сообщений (`vk_notify_plus_read`) работают **только в личных диалогах с ботом**. ВКонтакте не отправляет ботам статусы прочтения из общих бесед. Тестируйте эту автоматизацию в диалоге тет-а-тет с вашим сообществом!
 
 *Внимание: для реакции на «прочтение» мы специально используем внутреннее уведомление Home Assistant (`persistent_notification`), чтобы не создать бесконечную петлю в ВК (бот пишет -> вы читаете -> бот снова пишет).*
 
@@ -486,10 +486,10 @@ description: >-
 mode: single
 triggers:
   - trigger: event
-    event_type: vk_notify_typing
+    event_type: vk_notify_plus_typing
     id: typing
   - trigger: event
-    event_type: vk_notify_read
+    event_type: vk_notify_plus_read
     id: read
 actions:
   - choose:
@@ -497,9 +497,9 @@ actions:
           - condition: trigger
             id: typing
         sequence:
-          - action: vk_notify.send_message
+          - action: vk_notify_plus.send_message
             target:
-              entity_id: notify.vk_notify_2000000008 # <-- Ваш личный VK ID(Бота), а не ID чата!
+              entity_id: notify.vk_notify_plus_2000000008 # <-- Ваш личный VK ID(Бота), а не ID чата!
             data:
               message: 👀 О, вижу, ты что-то печатаешь! Жду команду...
           - delay: "00:00:10"
@@ -512,7 +512,7 @@ actions:
           # Отправляем уведомление в панель самого Home Assistant (колокольчик слева внизу)
           - action: persistent_notification.create
             data:
-              title: "ВКонтакте (VK Notify)"
+              title: "ВКонтакте (VK Notify Plus)"
               message: "Пользователь только что прочитал ваши сообщения! ✔️✔️"
           - delay: "00:00:10"
 ```
@@ -527,7 +527,7 @@ actions:
 
 ```yaml
 alias: "VK: Демонстрация всех возможностей (Master Showcase) V3"
-description: "Полный прогон всех служб обновленной интеграции VK Notify, включая парсеры и get_user_info"
+description: "Полный прогон всех служб обновленной интеграции VK Notify Plus, включая парсеры и get_user_info"
 mode: single
 triggers: [] # Запускается вручную для тестов
 
@@ -536,9 +536,9 @@ actions:
   # 1. ИМИТАЦИЯ АКТИВНОСТИ
   # ==========================================
   - alias: "1. Имитация набора текста (Печатает...)"
-    action: vk_notify.set_activity
+    action: vk_notify_plus.set_activity
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       type: typing
   - delay: "00:00:02"
@@ -547,9 +547,9 @@ actions:
   # 2. ПОЛУЧЕНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ
   # ==========================================
   - alias: "2. Скрытый запрос данных пользователя (get_user_info)"
-    action: vk_notify.get_user_info
+    action: vk_notify_plus.get_user_info
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       user_id: "123456789" # ID Пользователя ВК <------------------
     response_variable: vk_user
@@ -558,9 +558,9 @@ actions:
   # 3. БАЗОВОЕ СООБЩЕНИЕ + ИМЯ + RESPONSE VARIABLE
   # ==========================================
   - alias: "3. Отправка приветствия по имени и сохранение ID сообщения"
-    action: vk_notify.send_message
+    action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       title: "🚀 ТЕСТОВЫЙ ПРОГОН СИСТЕМЫ"
       message: >
@@ -586,9 +586,9 @@ actions:
 
   # 4.1. Режим: HTML (По умолчанию)
   - alias: "4.1. Тест парсера: HTML (По умолчанию)"
-    action: vk_notify.send_message
+    action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: >
         🌐 <b>Тест режима HTML:</b>
@@ -599,9 +599,9 @@ actions:
 
   # 4.2. Режим: Markdown (Устаревший)
   - alias: "4.2. Тест парсера: Markdown (Legacy)"
-    action: vk_notify.send_message
+    action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: >
         📝 **Тест режима Markdown (Legacy):**
@@ -612,9 +612,9 @@ actions:
 
   # 4.3. Режим: MarkdownV2
   - alias: "4.3. Тест парсера: MarkdownV2"
-    action: vk_notify.send_message
+    action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: >
         🚀 **Тест режима MarkdownV2:**
@@ -626,9 +626,9 @@ actions:
 
   # 4.4. Режим: Обычный текст (Plain)
   - alias: "4.4. Тест парсера: Plain (Обычный текст)"
-    action: vk_notify.send_message
+    action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: >
         🧱 Тест режима Plain (Обычный текст):
@@ -642,9 +642,9 @@ actions:
   # 5. ОТПРАВКА СТИКЕРА
   # ==========================================
   - alias: "5. Отправка стикера ВК"
-    action: vk_notify.send_sticker
+    action: vk_notify_plus.send_sticker
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       sticker_id: 3 # Собака Спотти
   - delay: "00:00:02"
@@ -655,9 +655,9 @@ actions:
   
   # Ставим лайк (реакцию) на приветственное сообщение
   - alias: "6.1. Установка реакции (Лайк) на первое сообщение"
-    action: vk_notify.send_reaction
+    action: vk_notify_plus.send_reaction
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       reaction_id: 4 # Огонь 🔥
       conversation_message_id: >
@@ -666,9 +666,9 @@ actions:
   
   # Закрепляем это сообщение
   - alias: "6.2. Закрепление первого сообщения в шапке чата"
-    action: vk_notify.pin_message
+    action: vk_notify_plus.pin_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       conversation_message_id: >
         {% set r = welcome_msg.values() | first | default({}) %}
@@ -676,9 +676,9 @@ actions:
 
   # Редактируем текст первого сообщения
   - alias: "6.3. Редактирование текста первого сообщения"
-    action: vk_notify.edit_message
+    action: vk_notify_plus.edit_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: "<b>✅ Данные {{ vk_user.full_name }} получены.</b> Тест продолжается..."
       parse_mode: html
@@ -691,9 +691,9 @@ actions:
   # 7. ГЕОЛОКАЦИЯ (КАРТА)
   # ==========================================
   - alias: "7. Отправка геолокации (Координаты Кремля)"
-    action: vk_notify.send_message
+    action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: "📍 Координаты (Московский Кремль):"
       lat: 55.7520
@@ -704,9 +704,9 @@ actions:
   # 8. ФОТО ИЗ ИНТЕРНЕТА (ПО URL)
   # ==========================================
   - alias: "8. Отправка картинки по ссылке (URL)"
-    action: vk_notify.send_photo
+    action: vk_notify_plus.send_photo
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       url: "https://www.home-assistant.io/images/default-social.png"
       message: "📸 Отправка картинки напрямую по ссылке URL."
@@ -717,9 +717,9 @@ actions:
   # 9. КАРУСЕЛЬ (ШАБЛОН)
   # ==========================================
   - alias: "9. Отправка карусели с использованием имени пользователя"
-    action: vk_notify.send_message
+    action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: "🎠 Тест карусели:"
       template:
@@ -747,9 +747,9 @@ actions:
   # 10. ИЗМЕНЕНИЕ НАЗВАНИЯ ЧАТА (ТРЕБУЮТСЯ ПРАВА АДМИНА)
   # ==========================================
   - alias: "10. Изменение названия беседы/чата (нужны права Администратора)"
-    action: vk_notify.edit_chat
+    action: vk_notify_plus.edit_chat
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       title: "🟢 ТЕСТ ЗАВЕРШЕН | Дом 190"
     continue_on_error: true # Если бот не админ, пропустит без остановки скрипта
@@ -760,24 +760,24 @@ actions:
   # Раскомментируйте и укажите свои пути, когда добавите файлы в папку /config/www/
   #
   # - alias: "11.1. Статус 'Записывает голосовое...'"
-  #   action: vk_notify.set_activity
+  #   action: vk_notify_plus.set_activity
   #   target: 
-  #     entity_id: notify.vk_notify_2000000003
+  #     entity_id: notify.vk_notify_plus_2000000003
   #   data: 
   #     type: audiomsg
   # - delay: "00:00:02"
   #
   # - alias: "11.2. Отправка голосового сообщения (.ogg)"
-  #   action: vk_notify.send_voice
+  #   action: vk_notify_plus.send_voice
   #   target: 
-  #     entity_id: notify.vk_notify_2000000003
+  #     entity_id: notify.vk_notify_plus_2000000003
   #   data:
   #     file: "/config/www/test_voice.ogg"
   #
   # - alias: "11.3. Отправка файла документа"
-  #   action: vk_notify.send_file
+  #   action: vk_notify_plus.send_file
   #   target: 
-  #     entity_id: notify.vk_notify_2000000003
+  #     entity_id: notify.vk_notify_plus_2000000003
   #   data:
   #     file: "/config/www/report.pdf"
   #     message: "📄 Отчет о тестировании"
@@ -786,9 +786,9 @@ actions:
   # 12. ЗАВЕРШЕНИЕ
   # ==========================================
   - alias: "12. Завершающее сообщение"
-    action: vk_notify.send_message
+    action: vk_notify_plus.send_message
     target:
-      entity_id: notify.vk_notify_2000000003
+      entity_id: notify.vk_notify_plus_2000000003
     data:
       message: "🏁 <b>Все системы работают штатно.</b> Тест окончен!"
       parse_mode: html
@@ -808,7 +808,7 @@ description: Запустите автоматизацию вручную, чт�
 mode: parallel
 triggers:
   - trigger: event
-    event_type: vk_notify_callback
+    event_type: vk_notify_plus_callback
     id: button_click
 actions:
   - choose:
@@ -816,9 +816,9 @@ actions:
           - condition: template
             value_template: "{{ trigger is not defined or trigger.id != 'button_click' }}"
         sequence:
-          - action: vk_notify.send_message
+          - action: vk_notify_plus.send_message
             target:
-              entity_id: notify.vk_notify_2000000003
+              entity_id: notify.vk_notify_plus_2000000003
             data:
               title: 🛠 Интерактивный тест
               message: >-
@@ -838,9 +838,9 @@ actions:
                       color: positive
             response_variable: test_msg
           - delay: "00:00:02"
-          - action: vk_notify.pin_message
+          - action: vk_notify_plus.pin_message
             target:
-              entity_id: notify.vk_notify_2000000003
+              entity_id: notify.vk_notify_plus_2000000003
             data:
               conversation_message_id: >
                 {% set r = test_msg.values() | first | default({}) %} {{
@@ -854,21 +854,21 @@ actions:
               payload_data = p | from_json if p is string else p %} {{
               payload_data.get('action') == 'test_new_features' }}
         sequence:
-          - action: vk_notify.answer_callback
+          - action: vk_notify_plus.answer_callback
             target:
-              entity_id: notify.vk_notify_2000000003
+              entity_id: notify.vk_notify_plus_2000000003
             data:
               event_id: "{{ trigger.event.data.event_id }}"
               user_id: "{{ trigger.event.data.user_id }}"
               message: 🚀 Магия работает! Сообщение откреплено.
-          - action: vk_notify.unpin_message
+          - action: vk_notify_plus.unpin_message
             target:
-              entity_id: notify.vk_notify_2000000003
+              entity_id: notify.vk_notify_plus_2000000003
             data:
               conversation_message_id: "{{ trigger.event.data.conversation_message_id }}"
-          - action: vk_notify.edit_message
+          - action: vk_notify_plus.edit_message
             target:
-              entity_id: notify.vk_notify_2000000003
+              entity_id: notify.vk_notify_plus_2000000003
             data:
               conversation_message_id: "{{ trigger.event.data.conversation_message_id }}"
               message: |-
@@ -893,9 +893,9 @@ actions:
 Отлично подходит для скриптов, которые парсят данные или ждут ответа от аппаратуры. Бот будет показывать статус активности в течение 10 секунд.
 
 ```yaml
-action: vk_notify.set_activity
+action: vk_notify_plus.set_activity
 target:
-  entity_id: notify.vk_notify_2000001234
+  entity_id: notify.vk_notify_plus_2000001234
 data:
   type: typing # или 'audiomsg', если бот "записывает голосовое"
 ```
@@ -905,9 +905,9 @@ data:
 *(Коды реакций VK: 1 = ❤️, 2 = 🔥, 3 = 😂, 4 = 👍 и т.д.)*
 
 ```yaml
-action: vk_notify.send_reaction
+action: vk_notify_plus.send_reaction
 target:
-  entity_id: notify.vk_notify_2000001234
+  entity_id: notify.vk_notify_plus_2000001234
 data:
   conversation_message_id: "{{ trigger.event.data.conversation_message_id }}" # ID сообщения из триггера
   reaction_id: 4 # Ставим Класс 👍
@@ -917,9 +917,9 @@ data:
 Бот пришлет интерактивную карту прямо в чат.
 
 ```yaml
-action: vk_notify.send_message
+action: vk_notify_plus.send_message
 target:
-  entity_id: notify.vk_notify_2000001234
+  entity_id: notify.vk_notify_plus_2000001234
 data:
   message: "📍 Автомобиль припаркован здесь:"
   lat: 55.751244
@@ -930,9 +930,9 @@ data:
 Отправка красивых горизонтальных карточек с кнопками.
 
 ```yaml
-action: vk_notify.send_message
+action: vk_notify_plus.send_message
 target:
-  entity_id: notify.vk_notify_2000001234 
+  entity_id: notify.vk_notify_plus_2000001234 
 data:
   message: "💡 Выберите сценарий освещения для гостиной:"
   template:
@@ -974,18 +974,18 @@ data:
 
 ```yaml
 # Сначала отправляем сообщение и получаем ответ
-- action: vk_notify.send_message
+- action: vk_notify_plus.send_message
   target:
-    entity_id: notify.vk_notify_2000001234
+    entity_id: notify.vk_notify_plus_2000001234
   data:
     message: "🎛 Главный пульт управления домом"
     # ... тут ваша клавиатура ...
   response_variable: msg_response
 
 # Затем закрепляем это сообщение
-- action: vk_notify.pin_message
+- action: vk_notify_plus.pin_message
   target:
-    entity_id: notify.vk_notify_2000001234
+    entity_id: notify.vk_notify_plus_2000001234
   data:
     conversation_message_id: "{{ (msg_response.values() | first).conversation_message_id }}"
 ```
@@ -994,9 +994,9 @@ data:
 Используйте службу `send_voice`, передав ей локальный путь к аудиофайлу в формате `.ogg`.
 
 ```yaml
-action: vk_notify.send_voice
+action: vk_notify_plus.send_voice
 target:
-  entity_id: notify.vk_notify_2000001234
+  entity_id: notify.vk_notify_plus_2000001234
 data:
   file: "/config/www/audio/alarm.ogg"
 ```
@@ -1006,9 +1006,9 @@ data:
 
 ```yaml
 # Мгновенная отправка снимков сразу с нескольких камер Home Assistant одним сообщением (альбомом)
-action: vk_notify.send_photo
+action: vk_notify_plus.send_photo
 target:
-  entity_id: notify.vk_notify_2000001234
+  entity_id: notify.vk_notify_plus_2000001234
 data:
   camera_entity:
     - camera.front_door
@@ -1018,9 +1018,9 @@ data:
 
 ```yaml
 # Отправка локального файла
-action: vk_notify.send_photo
+action: vk_notify_plus.send_photo
 target:
-  entity_id: notify.vk_notify_2000001234
+  entity_id: notify.vk_notify_plus_2000001234
 data:
   file: "/config/www/vk_test.jpg"
   message: "Проверка локальной фотографии"
@@ -1030,9 +1030,9 @@ data:
 
 ```yaml
 # Отправка снимка события Frigate по URL
-action: vk_notify.send_photo
+action: vk_notify_plus.send_photo
 target:
-  entity_id: notify.vk_notify_2000001234
+  entity_id: notify.vk_notify_plus_2000001234
 data:
   url: "http://192.168.1.50:5000/api/events/{{ trigger.payload_json['after']['id'] }}/snapshot.jpg"
   message: "🚨 Обнаружено движение (Frigate)"
@@ -1048,25 +1048,5 @@ data:
 
 ---
 
-<details>
-  <summary><b>🖼 Скриншоты установки и настройки (Нажмите, чтобы развернуть)</b></summary>
-  <br>
-  <img width="584" height="722" alt="Снимок экрана 2026-04-08 в 10 24 57" src="https://github.com/user-attachments/assets/3b427935-f55f-4a38-b312-996a3b6fa1e2" />
+⬅️ **[Вернуться к основной документации (../README.md)](../README.md)** | 📖 **[Руководство по настройке ВК (SETUP_GUIDE.md)](SETUP_GUIDE.md)**
 
-<img width="882" height="798" alt="Снимок экрана 2026-04-08 в 10 29 28" src="https://github.com/user-attachments/assets/5f5f5ad6-a9e8-42df-97f0-8333c94df659" />
-
-<img width="882" height="798" alt="Снимок экрана 2026-04-08 в 10 30 40" src="https://github.com/user-attachments/assets/8fc155a5-cc20-48b6-91ec-89013a3e995a" />
-
-<img width="1011" height="840" alt="Снимок экрана 2026-04-08 в 10 27 48" src="https://github.com/user-attachments/assets/288f2258-0669-43e5-bd22-00ae36a9dcfa" />
-
-<img width="582" height="294" alt="Снимок экрана 2026-04-08 в 16 18 00" src="https://github.com/user-attachments/assets/e77dce74-d6d8-4979-9734-74d14952a1c7" />
-
-<img width="582" height="294" alt="Снимок экрана 2026-04-08 в 16 17 52" src="https://github.com/user-attachments/assets/4365b34d-f3d4-4761-9469-efa8d51b0f1c" />
-
-https://github.com/user-attachments/assets/e257553f-e171-4935-a5c5-afb8dddb018f
-
-https://github.com/user-attachments/assets/af5d2632-b4f9-4635-843e-f40ce7968589
-
-https://github.com/user-attachments/assets/3a28f5b8-e827-4fc7-941e-62d93620b142
-
-</details>

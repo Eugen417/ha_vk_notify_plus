@@ -1,5 +1,5 @@
 """
-VK Notify __init__.py v1.7.0
+VK Notify __init__.py v1.0.0
 Typed runtime_data and Long Poll manager lifecycle.
 """
 from __future__ import annotations

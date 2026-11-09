@@ -1,5 +1,5 @@
 """
-VK Notify helpers.py v1.7.0
+VK Notify helpers.py v1.0.0
 Compatibility facade re-exporting formatting, redaction, and media upload helpers.
 """
 from __future__ import annotations

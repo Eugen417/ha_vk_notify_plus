@@ -36,15 +36,15 @@ jobs:
           import subprocess
           import sys
 
-          pkg = pathlib.Path("custom_components/vk_notify")
-          assert pkg.is_dir(), "custom_components/vk_notify directory missing"
+          pkg = pathlib.Path("custom_components/vk_notify_plus")
+          assert pkg.is_dir(), "custom_components/vk_notify_plus directory missing"
 
           # 1. Validate manifest.json (Hassfest standard)
           manifest = json.loads((pkg / "manifest.json").read_text(encoding="utf-8"))
           req_keys = {"domain", "name", "codeowners", "config_flow", "documentation", "iot_class", "issue_tracker", "requirements", "version"}
           missing = req_keys - set(manifest.keys())
           assert not missing, f"manifest.json missing keys: {missing}"
-          assert manifest["domain"] == "vk_notify", "Invalid domain in manifest.json"
+          assert manifest["domain"] == "vk_notify_plus", "Invalid domain in manifest.json"
           keys = list(manifest.keys())
           assert keys[:2] == ["domain", "name"] and keys[2:] == sorted(keys[2:]), f"manifest.json keys not sorted: {keys}"
           print(f"[OK] manifest.json valid (version {manifest['version']})")
@@ -109,7 +109,7 @@ jobs:
           assert "name" in hacs and "homeassistant" in hacs, "Invalid hacs.json"
           assert pathlib.Path("README.md").is_file(), "README.md is required for HACS"
 
-          pkg = pathlib.Path("custom_components/vk_notify")
+          pkg = pathlib.Path("custom_components/vk_notify_plus")
           for icon_rel in (
               "icon.png",
               "icon@2x.png",

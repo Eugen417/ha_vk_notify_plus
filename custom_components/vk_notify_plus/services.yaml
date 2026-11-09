@@ -1,10 +1,10 @@
-# VK Notify services.yaml v1.7.0 (camera_entity, media-source, optional video_access_token, URL for send_file/wall_post)
+# VK Notify Plus services.yaml v1.0.0 (camera_entity, media-source, optional video_access_token, URL for send_file/wall_post)
 send_message:
   name: "Отправить сообщение"
   description: Отправляет текстовое уведомление, медиа, координаты или карусель.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     title:
@@ -117,7 +117,7 @@ send_photo:
   description: Отправляет фотографию через ВКонтакте.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     message:
@@ -210,7 +210,7 @@ send_file:
   description: Отправляет произвольный документ через ВКонтакте.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     file:
@@ -294,7 +294,7 @@ send_video:
   description: "Отправляет видеофайл (.mp4) как нативное видео с плеером ВКонтакте. ВНИМАНИЕ: Требуется токен пользователя!"
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     video_access_token:
@@ -383,7 +383,7 @@ send_voice:
   description: Отправляет аудиофайл (.ogg) как нативное голосовое сообщение.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     file:
@@ -461,7 +461,7 @@ wall_post:
   description: Отправляет новую запись на стену сообщества.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     message:
@@ -486,7 +486,7 @@ edit_message:
   description: Изменяет текст, клавиатуру и вложения ранее отправленного сообщения.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     message:
@@ -543,7 +543,7 @@ delete_message:
   description: Удаляет сообщение у всех участников чата.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     conversation_message_id:
@@ -557,7 +557,7 @@ send_sticker:
   description: Отправляет стикер ВКонтакте по его внутреннему номеру.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     sticker_id:
@@ -577,7 +577,7 @@ edit_chat:
   description: Меняет заголовок группового чата (Для этого бот должен быть администратором).
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     title:
@@ -592,7 +592,7 @@ get_user_info:
   description: Запрашивает данные пользователя. Возвращает Имя, Фамилию и статус Онлайн.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     user_id:
@@ -607,7 +607,7 @@ set_activity:
   description: Показывает в чате, что бот печатает или записывает голосовое сообщение.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     type:
@@ -626,7 +626,7 @@ send_reaction:
   description: Устанавливает эмодзи-реакцию на конкретное сообщение.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     conversation_message_id:
@@ -680,7 +680,7 @@ pin_message:
   description: Закрепляет сообщение в шапке беседы.
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     conversation_message_id:
@@ -694,7 +694,7 @@ unpin_message:
   description: "Открепляет сообщение в шапке беседы. Если ID не передан, открепит текущее закрепленное."
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     conversation_message_id:
@@ -708,7 +708,7 @@ answer_callback:
   description: "Останавливает загрузку на кнопке и (опционально) показывает всплывающее уведомление (снэкбар) в приложении ВК."
   target:
     entity:
-      integration: vk_notify
+      integration: vk_notify_plus
       domain: notify
   fields:
     event_id:

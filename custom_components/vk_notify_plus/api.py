@@ -1,5 +1,5 @@
 """
-VK Notify api.py v1.7.0
+VK Notify api.py v1.0.0
 Unified async VK API client with automatic retry/backoff on rate limits (Error 6/9/10)
 and built-in sensitive data redaction.
 """

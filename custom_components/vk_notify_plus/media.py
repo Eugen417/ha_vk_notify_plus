@@ -1,5 +1,5 @@
 """
-VK Notify media.py v1.7.0
+VK Notify media.py v1.0.0
 Media downloading, camera snapshot capture, media-source resolution,
 MIME/magic-bytes detection, WebP/BMP conversion, and VK multipart uploads.
 """

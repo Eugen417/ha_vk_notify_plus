@@ -1,10 +1,10 @@
 """
-VK Notify const.py v1.7.0
+VK Notify Plus const.py v1.0.0
 Single source of truth for constants and VK API endpoints.
 """
 from __future__ import annotations
 
-DOMAIN = "vk_notify"
+DOMAIN = "vk_notify_plus"
 
 CONF_ACCESS_TOKEN = "access_token"
 CONF_VIDEO_ACCESS_TOKEN = "video_access_token"

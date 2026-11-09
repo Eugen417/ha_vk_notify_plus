@@ -1,5 +1,5 @@
 """
-VK Notify longpoll.py v1.7.0
+VK Notify longpoll.py v1.0.0
 Added: Extraction of incoming attachments (photos, documents, voice messages with VK transcript)
 and geo coordinates in vk_notify_text / vk_notify_command events.
 """
