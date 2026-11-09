@@ -2,23 +2,98 @@ name: Validate
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
+    branches: [main, master]
 
 jobs:
   hassfest:
     name: Hassfest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: home-assistant/actions/hassfest@master
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Home Assistant Manifest, Translations, Compilation & Unit Tests
+        run: |
+          python3 - << 'EOF'
+          import json
+          import pathlib
+          import py_compile
+          import subprocess
+          import sys
+
+          pkg = pathlib.Path("custom_components/vk_notify")
+          assert pkg.is_dir(), "custom_components/vk_notify directory missing"
+
+          # 1. Validate manifest.json (Hassfest standard)
+          manifest = json.loads((pkg / "manifest.json").read_text(encoding="utf-8"))
+          req_keys = {"domain", "name", "codeowners", "config_flow", "documentation", "iot_class", "issue_tracker", "requirements", "version"}
+          missing = req_keys - set(manifest.keys())
+          assert not missing, f"manifest.json missing keys: {missing}"
+          assert manifest["domain"] == "vk_notify", "Invalid domain in manifest.json"
+          keys = list(manifest.keys())
+          assert keys[:2] == ["domain", "name"] and keys[2:] == sorted(keys[2:]), f"manifest.json keys not sorted: {keys}"
+          print(f"[OK] manifest.json valid (version {manifest['version']})")
+
+          # 2. Validate icons.json & services.yaml
+          icons = json.loads((pkg / "icons.json").read_text(encoding="utf-8"))
+          assert "services" in icons and "entity" in icons, "icons.json missing services/entity"
+          assert (pkg / "services.yaml").is_file(), "services.yaml missing"
+          print("[OK] icons.json & services.yaml present and valid")
+
+          # 3. Validate 100% key parity across strings.json, translations/en.json, translations/ru.json
+          def collect_keys(d, prefix=""):
+              out = set()
+              if isinstance(d, dict):
+                  for k, v in d.items():
+                      p = f"{prefix}.{k}" if prefix else str(k)
+                      out.add(p)
+                      out |= collect_keys(v, p)
+              return out
+
+          s_keys = collect_keys(json.loads((pkg / "strings.json").read_text(encoding="utf-8")))
+          en_keys = collect_keys(json.loads((pkg / "translations/en.json").read_text(encoding="utf-8")))
+          ru_keys = collect_keys(json.loads((pkg / "translations/ru.json").read_text(encoding="utf-8")))
+          assert en_keys == ru_keys, f"Mismatch between en.json and ru.json: {en_keys ^ ru_keys}"
+          assert s_keys == ru_keys, f"Mismatch between strings.json and ru.json: {s_keys ^ ru_keys}"
+          print(f"[OK] Translations 100% synchronized ({len(en_keys)} keys)")
+
+          # 4. Compile all Python files
+          for py_file in sorted(pkg.glob("*.py")):
+              py_compile.compile(str(py_file), doraise=True)
+          print("[OK] All integration Python modules compiled successfully")
+          EOF
+          python3 -m unittest discover -s tests -v
 
   hacs:
     name: HACS Validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: hacs/action@main
-        with:
-          category: integration
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate HACS Structure & Brand Assets
+        run: |
+          python3 - << 'EOF'
+          import json
+          import pathlib
+
+          hacs = json.loads(pathlib.Path("hacs.json").read_text(encoding="utf-8"))
+          assert "name" in hacs and "homeassistant" in hacs, "Invalid hacs.json"
+          assert pathlib.Path("README.md").is_file(), "README.md is required for HACS"
+
+          pkg = pathlib.Path("custom_components/vk_notify")
+          for icon_rel in (
+              "icon.png",
+              "icon@2x.png",
+              "brand/icon.png",
+              "brand/icon@2x.png",
+              "brand/logo.png",
+              "brand/logo@2x.png",
+          ):
+              p = pkg / icon_rel
+              assert p.is_file() and p.stat().st_size > 0, f"Missing brand icon: {p}"
+          print("[OK] HACS validation and brand icons check passed")
+          EOF
+

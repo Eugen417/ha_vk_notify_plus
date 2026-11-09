@@ -12,9 +12,45 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
+      - name: Create Release via Forgejo / GitHub API
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_URL: ${{ github.api_url }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - << 'EOF'
+          import json
+          import os
+          import urllib.request
+
+          api_url = os.environ["API_URL"].rstrip("/")
+          repo = os.environ["REPO"]
+          tag = os.environ["TAG"]
+          token = os.environ["TOKEN"]
+
+          payload = json.dumps({
+              "tag_name": tag,
+              "name": f"VK Notify {tag}",
+              "body": f"Release {tag}",
+              "draft": False,
+              "prerelease": False,
+          }).encode("utf-8")
+
+          req = urllib.request.Request(
+              f"{api_url}/repos/{repo}/releases",
+              data=payload,
+              headers={
+                  "Authorization": f"token {token}",
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+              },
+              method="POST",
+          )
+          with urllib.request.urlopen(req, timeout=30) as resp:
+              print(f"Release {tag} created successfully (HTTP {resp.status})")
+          EOF
+
