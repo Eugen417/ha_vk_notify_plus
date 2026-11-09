@@ -1,0 +1,57 @@
+{
+  "entity": {
+    "notify": {
+      "default": "mdi:message-text-outline"
+    }
+  },
+  "services": {
+    "send_message": {
+      "service": "mdi:message-text-fast-outline"
+    },
+    "send_photo": {
+      "service": "mdi:image-plus"
+    },
+    "send_file": {
+      "service": "mdi:file-send-outline"
+    },
+    "send_video": {
+      "service": "mdi:video-outline"
+    },
+    "send_voice": {
+      "service": "mdi:microphone-message"
+    },
+    "wall_post": {
+      "service": "mdi:post-outline"
+    },
+    "edit_message": {
+      "service": "mdi:message-draw"
+    },
+    "delete_message": {
+      "service": "mdi:message-off-outline"
+    },
+    "send_sticker": {
+      "service": "mdi:sticker-emoji"
+    },
+    "edit_chat": {
+      "service": "mdi:forum-outline"
+    },
+    "get_user_info": {
+      "service": "mdi:account-search-outline"
+    },
+    "set_activity": {
+      "service": "mdi:comment-processing-outline"
+    },
+    "send_reaction": {
+      "service": "mdi:emoticon-happy-outline"
+    },
+    "pin_message": {
+      "service": "mdi:pin-outline"
+    },
+    "unpin_message": {
+      "service": "mdi:pin-off-outline"
+    },
+    "answer_callback": {
+      "service": "mdi:gesture-tap-button"
+    }
+  }
+}

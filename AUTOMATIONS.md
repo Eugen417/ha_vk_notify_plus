@@ -1001,6 +1001,33 @@ data:
   file: "/config/www/audio/alarm.ogg"
 ```
 
+#### 7. Отправка фотографий (Локальный файл или снимок Frigate по URL)
+Служба `send_photo` автоматически определяет MIME-тип изображения (`JPEG`, `PNG`, `GIF`, `WebP`, `BMP`) по содержимому файла и заголовкам ответа.
+
+```yaml
+# Отправка локального файла
+action: vk_notify.send_photo
+target:
+  entity_id: notify.vk_notify_2000001234
+data:
+  file: "/config/www/vk_test.jpg"
+  message: "Проверка локальной фотографии"
+  parse_mode: plain
+  timeout: 120
+```
+
+```yaml
+# Отправка снимка события Frigate по URL
+action: vk_notify.send_photo
+target:
+  entity_id: notify.vk_notify_2000001234
+data:
+  url: "http://192.168.1.50:5000/api/events/{{ trigger.payload_json['after']['id'] }}/snapshot.jpg"
+  message: "🚨 Обнаружено движение (Frigate)"
+  parse_mode: html
+  timeout: 60
+```
+
 </details>
 
 ---
