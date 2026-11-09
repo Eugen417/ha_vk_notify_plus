@@ -12,7 +12,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        env:
+          SERVER_URL: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FIXED_URL=$(echo "$SERVER_URL" | sed 's|http://server:3000|http://192.168.1.9:3100|g')
+          AUTH_URL=$(echo "$FIXED_URL" | sed "s|://|://oauth2:${TOKEN}@|")
+          git config --global init.defaultBranch main
+          git config --global --add safe.directory "$PWD"
+          git init .
+          git remote add origin "${AUTH_URL}/${REPO}.git"
+          git fetch --depth=1 origin "$SHA"
+          git checkout -q FETCH_HEAD
 
       - name: Validate Home Assistant Manifest, Translations, Compilation & Unit Tests
         run: |
@@ -71,7 +84,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        env:
+          SERVER_URL: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FIXED_URL=$(echo "$SERVER_URL" | sed 's|http://server:3000|http://192.168.1.9:3100|g')
+          AUTH_URL=$(echo "$FIXED_URL" | sed "s|://|://oauth2:${TOKEN}@|")
+          git config --global init.defaultBranch main
+          git config --global --add safe.directory "$PWD"
+          git init .
+          git remote add origin "${AUTH_URL}/${REPO}.git"
+          git fetch --depth=1 origin "$SHA"
+          git checkout -q FETCH_HEAD
 
       - name: Validate HACS Structure & Brand Assets
         run: |

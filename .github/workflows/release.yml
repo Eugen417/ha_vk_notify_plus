@@ -12,9 +12,6 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Create Release via Forgejo / GitHub API
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -27,7 +24,7 @@ jobs:
           import os
           import urllib.request
 
-          api_url = os.environ["API_URL"].rstrip("/")
+          api_url = os.environ["API_URL"].rstrip("/").replace("http://server:3000", "http://192.168.1.9:3100")
           repo = os.environ["REPO"]
           tag = os.environ["TAG"]
           token = os.environ["TOKEN"]
