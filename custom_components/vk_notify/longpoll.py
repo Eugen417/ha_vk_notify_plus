@@ -1,22 +1,106 @@
 """
-VK Notify longpoll.py v1.6.2
-Added: Resilient initial connection retry loop and verify_ssl support.
+VK Notify longpoll.py v1.7.0
+Added: Extraction of incoming attachments (photos, documents, voice messages with VK transcript)
+and geo coordinates in vk_notify_text / vk_notify_command events.
 """
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
+from typing import Any
 
 import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_PEER_ID, DOMAIN, VK_API_LONGPOLL_SERVER, VK_API_MARK_AS_READ, VK_API_VERSION
-from .helpers import redact_sensitive_text, redact_vk_payload
+from .const import (
+    CONF_PEER_ID,
+    DOMAIN,
+    VK_API_EVENT_ANSWER,
+    VK_API_LONGPOLL_SERVER,
+    VK_API_MARK_AS_READ,
+    VK_API_VERSION,
+)
+from .formatting import redact_sensitive_text, redact_vk_payload
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def extract_vk_attachments(
+    attachments: list[dict[str, Any]] | None,
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Извлекает структурированные вложения (фото, голосовые с расшифровкой transcript, документы) из сообщения ВК."""
+    if not attachments or not isinstance(attachments, list):
+        return [], None
+
+    parsed: list[dict[str, Any]] = []
+    voice_transcript: str | None = None
+
+    for att in attachments:
+        if not isinstance(att, dict):
+            continue
+        att_type = att.get("type")
+        obj = att.get(att_type) if att_type else None
+        if not isinstance(obj, dict):
+            continue
+
+        if att_type == "photo":
+            sizes = obj.get("sizes", [])
+            best_url = None
+            if isinstance(sizes, list) and sizes:
+                best = max(
+                    (s for s in sizes if isinstance(s, dict) and s.get("url")),
+                    key=lambda s: int(s.get("width", 0)) * int(s.get("height", 0)),
+                    default=None,
+                )
+                if best:
+                    best_url = best.get("url")
+            parsed.append(
+                {
+                    "type": "photo",
+                    "id": obj.get("id"),
+                    "owner_id": obj.get("owner_id"),
+                    "url": best_url,
+                    "text": obj.get("text", ""),
+                }
+            )
+        elif att_type == "audio_message":
+            transcript = obj.get("transcript")
+            if transcript and not voice_transcript:
+                voice_transcript = str(transcript).strip()
+            parsed.append(
+                {
+                    "type": "audio_message",
+                    "id": obj.get("id"),
+                    "owner_id": obj.get("owner_id"),
+                    "duration": obj.get("duration"),
+                    "link_ogg": obj.get("link_ogg"),
+                    "link_mp3": obj.get("link_mp3"),
+                    "transcript": transcript,
+                    "transcript_state": obj.get("transcript_state"),
+                }
+            )
+        elif att_type == "doc":
+            parsed.append(
+                {
+                    "type": "doc",
+                    "id": obj.get("id"),
+                    "owner_id": obj.get("owner_id"),
+                    "title": obj.get("title"),
+                    "ext": obj.get("ext"),
+                    "size": obj.get("size"),
+                    "url": obj.get("url"),
+                }
+            )
+        else:
+            parsed.append(
+                {"type": att_type, "id": obj.get("id"), "owner_id": obj.get("owner_id")}
+            )
+
+    return parsed, voice_transcript
+
 
 class VkLongPollManager:
     def __init__(self, hass: HomeAssistant, access_token: str, group_id: int, verify_ssl: bool = True) -> None:
@@ -86,17 +170,40 @@ class VkLongPollManager:
                 server = None
                 await asyncio.sleep(5)
 
-    def _handle_update(self, update: dict) -> None:
+    def _handle_update(self, update: dict[str, Any]) -> None:
         upd_type, obj = update.get("type"), update.get("object", {})
 
         if upd_type == "message_new":
             msg = obj.get("message", {})
-            peer_id, text, from_id = msg.get("peer_id"), msg.get("text", ""), msg.get("from_id")
+            peer_id, text, from_id = (
+                msg.get("peer_id"),
+                msg.get("text", ""),
+                msg.get("from_id"),
+            )
             ent_id = self._find_entity_id(peer_id) or "not_configured"
-            base = {"peer_id": peer_id, "entity_id": ent_id, "text": text, "from_id": from_id, "conversation_message_id": msg.get("conversation_message_id")}
+            attachments, voice_transcript = extract_vk_attachments(msg.get("attachments"))
+            geo_raw = msg.get("geo")
+            geo_coords = geo_raw.get("coordinates") if isinstance(geo_raw, dict) else None
+
+            base: dict[str, Any] = {
+                "peer_id": peer_id,
+                "entity_id": ent_id,
+                "text": text,
+                "from_id": from_id,
+                "conversation_message_id": msg.get("conversation_message_id"),
+                "attachments": attachments,
+            }
+            if voice_transcript:
+                base["transcript"] = voice_transcript
+            if geo_coords:
+                base["geo"] = geo_coords
+
             if text.startswith("/"):
                 cmd_parts = text.split()
-                self._hass.bus.async_fire(f"{DOMAIN}_command", {**base, "command": cmd_parts[0][1:] if cmd_parts else ""})
+                self._hass.bus.async_fire(
+                    f"{DOMAIN}_command",
+                    {**base, "command": cmd_parts[0][1:] if cmd_parts else ""},
+                )
             else:
                 self._hass.bus.async_fire(f"{DOMAIN}_text", base)
             self._hass.async_create_task(self._mark_as_read(peer_id, msg.get("id")))

@@ -1,5 +1,6 @@
 """
-VK Notify config_flow.py v1.6.2
+VK Notify config_flow.py v1.7.0
+Added: Optional video_access_token storage (masked password field) and mode switching in reconfigure.
 """
 
 from __future__ import annotations
@@ -7,7 +8,14 @@ from __future__ import annotations
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig, SelectSelectorMode
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .const import (
     CONF_ACCESS_TOKEN,
@@ -15,56 +23,78 @@ from .const import (
     CONF_MODE,
     CONF_PEER_ID,
     CONF_VERIFY_SSL,
+    CONF_VIDEO_ACCESS_TOKEN,
     DOMAIN,
     MODE_API,
     MODE_LONGPOLL,
     VK_API_CONVERSATIONS,
+    VK_API_GROUPS_GET_BY_ID,
+    VK_API_LONGPOLL_SERVER,
+    VK_API_USERS_GET,
     VK_API_VERSION,
 )
 
+PASSWORD_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
+
 STEP_TOKEN_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_ACCESS_TOKEN): str,
+        vol.Required(CONF_ACCESS_TOKEN): PASSWORD_SELECTOR,
         vol.Optional("name", default="VK Notify"): str,
+        vol.Optional(CONF_VIDEO_ACCESS_TOKEN, default=""): PASSWORD_SELECTOR,
         vol.Optional(CONF_VERIFY_SSL, default=True): bool,
     }
 )
 
-async def _detect_group_id(hass, access_token: str, verify_ssl: bool = True) -> int | None:
+
+async def _detect_group_id(
+    hass, access_token: str, verify_ssl: bool = True
+) -> int | None:
     """Try to auto-detect group_id from a community token via groups.getById."""
     session = async_get_clientsession(hass, verify_ssl=verify_ssl)
     try:
         async with session.get(
-            "https://api.vk.com/method/groups.getById",
+            VK_API_GROUPS_GET_BY_ID,
             params={"access_token": access_token, "v": VK_API_VERSION},
         ) as resp:
             data = await resp.json(content_type=None)
         resp_obj = data.get("response")
-        groups = resp_obj.get("groups", []) if isinstance(resp_obj, dict) else (resp_obj or [])
+        groups = (
+            resp_obj.get("groups", []) if isinstance(resp_obj, dict) else (resp_obj or [])
+        )
         if groups and isinstance(groups, list):
             return groups[0]["id"]
     except Exception:
         pass
     return None
 
-async def _check_longpoll_access(hass, access_token: str, group_id: int, verify_ssl: bool = True) -> bool:
+
+async def _check_longpoll_access(
+    hass, access_token: str, group_id: int, verify_ssl: bool = True
+) -> bool:
     """Return True if the token can call groups.getLongPollServer."""
     session = async_get_clientsession(hass, verify_ssl=verify_ssl)
     try:
         async with session.get(
-            "https://api.vk.com/method/groups.getLongPollServer",
-            params={"access_token": access_token, "group_id": group_id, "v": VK_API_VERSION},
+            VK_API_LONGPOLL_SERVER,
+            params={
+                "access_token": access_token,
+                "group_id": group_id,
+                "v": VK_API_VERSION,
+            },
         ) as resp:
             data = await resp.json(content_type=None)
         return "error" not in data
     except Exception:
         return False
 
-async def _validate_token(hass, access_token: str, verify_ssl: bool = True) -> bool:
+
+async def _validate_token(
+    hass, access_token: str, verify_ssl: bool = True
+) -> bool:
     session = async_get_clientsession(hass, verify_ssl=verify_ssl)
     try:
         async with session.get(
-            "https://api.vk.com/method/users.get",
+            VK_API_USERS_GET,
             params={"access_token": access_token, "v": VK_API_VERSION},
         ) as resp:
             data = await resp.json(content_type=None)
@@ -121,6 +151,7 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self._access_token: str = ""
+        self._video_access_token: str = ""
         self._name: str = "VK Notify"
         self._mode: str = MODE_API
         self._group_id: int | None = None
@@ -132,17 +163,24 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             verify_ssl = user_input.get(CONF_VERIFY_SSL, True)
             try:
-                valid = await _validate_token(self.hass, user_input[CONF_ACCESS_TOKEN], verify_ssl=verify_ssl)
+                valid = await _validate_token(
+                    self.hass, user_input[CONF_ACCESS_TOKEN], verify_ssl=verify_ssl
+                )
             except Exception:
                 errors["base"] = "cannot_connect"
             else:
                 if not valid:
                     errors["base"] = "invalid_token"
                 else:
-                    self._access_token = user_input[CONF_ACCESS_TOKEN]
+                    self._access_token = user_input[CONF_ACCESS_TOKEN].strip()
+                    self._video_access_token = (
+                        user_input.get(CONF_VIDEO_ACCESS_TOKEN) or ""
+                    ).strip()
                     self._name = user_input.get("name", "VK Notify")
                     self._verify_ssl = verify_ssl
-                    self._group_id = await _detect_group_id(self.hass, self._access_token, verify_ssl=verify_ssl)
+                    self._group_id = await _detect_group_id(
+                        self.hass, self._access_token, verify_ssl=verify_ssl
+                    )
                     return await self.async_step_select_mode()
 
         return self.async_show_form(
@@ -209,16 +247,20 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 chat_label = all_options.get(peer_id_str, f"Чат {peer_id_str}")
                 card_title = f"{self._name}: {chat_label}"
 
+                entry_data = {
+                    CONF_ACCESS_TOKEN: self._access_token,
+                    CONF_PEER_ID: int(peer_id_str),
+                    CONF_MODE: self._mode,
+                    CONF_GROUP_ID: self._group_id,
+                    "name": self._name,
+                    CONF_VERIFY_SSL: self._verify_ssl,
+                }
+                if self._video_access_token:
+                    entry_data[CONF_VIDEO_ACCESS_TOKEN] = self._video_access_token
+
                 return self.async_create_entry(
                     title=card_title,
-                    data={
-                        CONF_ACCESS_TOKEN: self._access_token,
-                        CONF_PEER_ID: int(peer_id_str),
-                        CONF_MODE: self._mode,
-                        CONF_GROUP_ID: self._group_id,
-                        "name": self._name,
-                        CONF_VERIFY_SSL: self._verify_ssl,
-                    },
+                    data=entry_data,
                 )
 
         options = [{"value": str(k), "label": v} for k, v in all_options.items()]
@@ -230,7 +272,7 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_PEER_ID): SelectSelector(
                         SelectSelectorConfig(
                             options=options,
-                            custom_value=True, # РАЗРЕШАЕТ РУЧНОЙ ВВОД!
+                            custom_value=True,
                             mode=SelectSelectorMode.DROPDOWN,
                         )
                     )
@@ -243,6 +285,8 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
         self._access_token = entry.data[CONF_ACCESS_TOKEN]
         current_verify = entry.data.get(CONF_VERIFY_SSL, True)
+        current_mode = entry.data.get(CONF_MODE, MODE_API)
+        current_video_token = entry.data.get(CONF_VIDEO_ACCESS_TOKEN, "")
 
         errors = {}
         all_options, writable_ids = await _get_conversations(
@@ -252,18 +296,41 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             peer_id_str = str(user_input[CONF_PEER_ID]).strip()
             new_verify = user_input.get(CONF_VERIFY_SSL, True)
+            new_mode = user_input.get(CONF_MODE, current_mode)
+            new_video_token = (user_input.get(CONF_VIDEO_ACCESS_TOKEN) or "").strip()
+            group_id = entry.data.get(CONF_GROUP_ID) or await _detect_group_id(
+                self.hass, self._access_token, verify_ssl=new_verify
+            )
+
             if not peer_id_str.lstrip("-").isdigit():
                 errors["base"] = "chat_not_writable"
             elif peer_id_str in all_options and peer_id_str not in writable_ids:
                 errors["base"] = "chat_not_writable"
+            elif new_mode == MODE_LONGPOLL and not group_id:
+                errors["base"] = "group_id_required"
+            elif new_mode == MODE_LONGPOLL and not await _check_longpoll_access(
+                self.hass, self._access_token, group_id, verify_ssl=new_verify
+            ):
+                errors["base"] = "longpoll_no_access"
             else:
                 chat_label = all_options.get(peer_id_str, f"Чат {peer_id_str}")
                 base_name = entry.data.get("name", "VK Notify")
+                updated_data = {
+                    **entry.data,
+                    CONF_PEER_ID: int(peer_id_str),
+                    CONF_MODE: new_mode,
+                    CONF_GROUP_ID: group_id,
+                    CONF_VERIFY_SSL: new_verify,
+                }
+                if new_video_token:
+                    updated_data[CONF_VIDEO_ACCESS_TOKEN] = new_video_token
+                else:
+                    updated_data.pop(CONF_VIDEO_ACCESS_TOKEN, None)
 
                 return self.async_update_reload_and_abort(
                     entry,
                     title=f"{base_name}: {chat_label}",
-                    data={**entry.data, CONF_PEER_ID: int(peer_id_str), CONF_VERIFY_SSL: new_verify},
+                    data=updated_data,
                 )
 
         options = [{"value": str(k), "label": v} for k, v in all_options.items()]
@@ -272,13 +339,25 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="reconfigure",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_PEER_ID, default=str(entry.data[CONF_PEER_ID])): SelectSelector(
+                    vol.Required(
+                        CONF_PEER_ID, default=str(entry.data[CONF_PEER_ID])
+                    ): SelectSelector(
                         SelectSelectorConfig(
                             options=options,
-                            custom_value=True, # РАЗРЕШАЕТ РУЧНОЙ ВВОД ПРИ ПЕРЕНАСТРОЙКЕ!
+                            custom_value=True,
                             mode=SelectSelectorMode.DROPDOWN,
                         )
                     ),
+                    vol.Required(CONF_MODE, default=current_mode): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[MODE_API, MODE_LONGPOLL],
+                            mode=SelectSelectorMode.LIST,
+                            translation_key="mode",
+                        )
+                    ),
+                    vol.Optional(
+                        CONF_VIDEO_ACCESS_TOKEN, default=current_video_token
+                    ): PASSWORD_SELECTOR,
                     vol.Optional(CONF_VERIFY_SSL, default=current_verify): bool,
                 }
             ),

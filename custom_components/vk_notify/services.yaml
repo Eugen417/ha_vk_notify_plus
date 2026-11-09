@@ -1,4 +1,4 @@
-# VK Notify services.yaml v1.6.2 (Added dynamic timeout field)
+# VK Notify services.yaml v1.7.0 (camera_entity, media-source, optional video_access_token, URL for send_file/wall_post)
 send_message:
   name: "Отправить сообщение"
   description: Отправляет текстовое уведомление, медиа, координаты или карусель.
@@ -143,15 +143,22 @@ send_photo:
               value: markdownv2
             - label: "Обычный текст"
               value: plain
+    camera_entity:
+      name: Камера Home Assistant
+      description: "Сущность камеры (например, camera.front_door) для мгновенной отправки снимка напрямую без сохранения на диск."
+      required: false
+      selector:
+        entity:
+          domain: camera
     file:
-      name: Локальный путь к файлу
-      description: Например, /config/www/image.jpg
+      name: Локальный путь к файлу или media-source://
+      description: Например, /config/www/image.jpg или media-source://...
       required: false
       selector:
         text: {}
     url:
       name: URL картинки
-      description: Прямая ссылка на картинку в интернете.
+      description: Прямая ссылка на картинку в интернете или локальной сети (например, Frigate).
       required: false
       selector:
         text: {}
@@ -206,9 +213,15 @@ send_file:
       domain: notify
   fields:
     file:
-      name: Локальный путь к файлу
-      description: Локальный путь к отправляемому файлу.
-      required: true
+      name: Локальный путь к файлу или media-source://
+      description: Локальный путь к отправляемому файлу (или укажите URL ниже).
+      required: false
+      selector:
+        text: {}
+    url:
+      name: URL файла
+      description: Прямая ссылка на скачивание документа по HTTP/HTTPS.
+      required: false
       selector:
         text: {}
     message:
@@ -285,8 +298,8 @@ send_video:
   fields:
     video_access_token:
       name: Токен пользователя (User Token)
-      description: "Токен реального профиля ВК с правами video и messages. Обязателен для загрузки видео."
-      required: true
+      description: "Токен реального профиля ВК с правами video и messages. Можно не указывать здесь, если он уже сохранён в настройках интеграции."
+      required: false
       selector:
         text: {}
     file:
@@ -457,7 +470,12 @@ wall_post:
         text:
           multiline: true
     file:
-      name: Локальный путь к фото
+      name: Локальный путь к файлу
+      required: false
+      selector:
+        text: {}
+    url:
+      name: URL файла
       required: false
       selector:
         text: {}
