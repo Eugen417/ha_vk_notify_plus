@@ -6,6 +6,7 @@ MIME/magic-bytes detection, WebP/BMP conversion, and VK multipart uploads.
 from __future__ import annotations
 
 from collections.abc import Callable
+import asyncio
 import io
 import ipaddress
 import json
@@ -116,12 +117,71 @@ def _convert_webp_or_bmp_sync(data: bytes, stem: str) -> tuple[bytes, str, str] 
             out = io.BytesIO()
             if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
                 img.save(out, format="PNG")
-                return out.getvalue(), "image/png", f"{stem}.png"
+                return out.getvalue(), "image/png", "image.png"
             rgb = img.convert("RGB")
             rgb.save(out, format="JPEG", quality=92)
-            return out.getvalue(), "image/jpeg", f"{stem}.jpg"
+            return out.getvalue(), "image/jpeg", "image.jpg"
     except Exception:
         return None
+
+
+def _normalize_image_for_vk_sync(
+    data: bytes, mime_type: str, force_reencode: bool = False
+) -> tuple[bytes, str, str, bool]:
+    """Нормализует изображение под требования сервера загрузки ВК (до 2560px по длинной стороне, чистый baseline RGB JPEG, восстановление обрезанных RTSP/камерных JPEG)."""
+    ext = _MIME_DEFAULT_IMAGE_EXT.get(mime_type, ".jpg")
+    short_filename = f"image{ext}"
+    if mime_type == "image/gif" and not force_reencode:
+        return data, mime_type, "image.gif", True
+
+    try:
+        from PIL import Image, ImageFile, ImageOps  # noqa: PLC0415
+
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+        with Image.open(io.BytesIO(data)) as img:
+            img.load()
+            w, h = img.size
+            if w < 16 or h < 16:
+                return data, mime_type, short_filename, False
+
+            work = ImageOps.exif_transpose(img)
+            w, h = work.size
+
+            if max(w, h) > 2560:
+                scale = 2560.0 / float(max(w, h))
+                new_w = max(1, int(w * scale))
+                new_h = max(1, int(h * scale))
+                work = work.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                w, h = work.size
+
+            if (max(w, h) / max(1, min(w, h))) > 19.0:
+                if w > h:
+                    target_h = max(1, int(w / 15.0))
+                    canvas = Image.new("RGB", (w, target_h), (0, 0, 0))
+                    canvas.paste(work.convert("RGB"), (0, (target_h - h) // 2))
+                    work = canvas
+                else:
+                    target_w = max(1, int(h / 15.0))
+                    canvas = Image.new("RGB", (target_w, h), (0, 0, 0))
+                    canvas.paste(work.convert("RGB"), ((target_w - w) // 2, 0))
+                    work = canvas
+
+            out = io.BytesIO()
+            if (
+                mime_type == "image/png"
+                and not force_reencode
+                and (work.mode in ("RGBA", "LA") or "transparency" in work.info)
+            ):
+                work.save(out, format="PNG", optimize=True)
+                return out.getvalue(), "image/png", "image.png", True
+
+            rgb = work.convert("RGB")
+            rgb.save(out, format="JPEG", quality=90, optimize=True, progressive=False)
+            return out.getvalue(), "image/jpeg", "image.jpg", True
+    except Exception as err:
+        _LOGGER.debug("Image normalization via Pillow failed: %s", err)
+        return data, mime_type, short_filename, False
 
 
 def _detect_magic_image_mime(data: bytes) -> str | None:
@@ -379,23 +439,45 @@ async def async_upload_photo(
     url, filepath = await _async_resolve_media_source(hass, url, filepath)
 
     if camera_entity:
-        try:
-            from homeassistant.components import camera as ha_camera  # noqa: PLC0415
+        file_bytes = b""
+        header_ct = None
+        last_cam_err: Exception | None = None
+        for cam_attempt in range(3):
+            try:
+                from homeassistant.components import camera as ha_camera  # noqa: PLC0415
 
-            image = await ha_camera.async_get_image(hass, camera_entity, timeout=timeout)
-            file_bytes = image.content
-            header_ct = image.content_type
-        except Exception as err:
-            raise HomeAssistantError(
-                f"Не удалось получить снимок с камеры '{camera_entity}': {redact_sensitive_text(err)}"
-            ) from err
+                image = await ha_camera.async_get_image(
+                    hass, camera_entity, timeout=timeout
+                )
+                raw_bytes = image.content
+                header_ct = image.content_type
+                if raw_bytes and len(raw_bytes) > 512:
+                    det_mime, _ = _detect_image_mime_and_filename(
+                        raw_bytes, source="image.jpg", header_content_type=header_ct
+                    )
+                    norm_bytes, norm_mime, norm_name, is_valid = (
+                        await hass.async_add_executor_job(
+                            _normalize_image_for_vk_sync, raw_bytes, det_mime, True
+                        )
+                    )
+                    if is_valid and len(norm_bytes) > 512:
+                        file_bytes = norm_bytes
+                        content_type = norm_mime
+                        filename = norm_name
+                        break
+            except Exception as err:
+                last_cam_err = err
+            await asyncio.sleep(0.6 * (cam_attempt + 1))
+
         if not file_bytes:
-            raise HomeAssistantError(f"Снимок с камеры '{camera_entity}' пуст (0 байт).")
-        content_type, filename = _detect_image_mime_and_filename(
-            file_bytes,
-            source=camera_entity.replace(".", "_"),
-            header_content_type=header_ct,
-        )
+            if last_cam_err:
+                raise HomeAssistantError(
+                    f"Не удалось получить снимок с камеры '{camera_entity}': {redact_sensitive_text(last_cam_err)}"
+                ) from last_cam_err
+            raise HomeAssistantError(
+                f"Камера '{camera_entity}' вернула пустой или повреждённый кадр."
+            )
+        upload_filename = "image.jpg" if content_type == "image/jpeg" else filename
     elif url:
         clean_url = url.strip()
         bypass_dl_ssl = (not verify_ssl) or is_local_url(clean_url)
@@ -456,62 +538,102 @@ async def async_upload_photo(
             "Для отправки фото укажите camera_entity, url или локальный путь file."
         )
 
-    if content_type in ("image/webp", "image/bmp"):
-        stem = os.path.splitext(filename)[0] or "image"
-        converted = await hass.async_add_executor_job(
-            _convert_webp_or_bmp_sync, file_bytes, stem
-        )
-        if converted is not None:
-            file_bytes, content_type, filename = converted
-
-    async with vk_session.get(
-        VK_API_PHOTO_UPLOAD_SERVER,
-        params={"access_token": access_token, "peer_id": peer_id, "v": VK_API_VERSION},
-        timeout=timeout_ctx,
-    ) as resp:
-        data = await resp.json(content_type=None)
-    if "error" in data:
-        raise HomeAssistantError(
-            f"VK API error (getUploadServer): {redact_vk_payload(data['error'])}"
-        )
-
-    upload_url = data.get("response", {}).get("upload_url")
-    if not upload_url:
-        raise HomeAssistantError(f"VK API did not return upload_url: {redact_vk_payload(data)}")
-
-    def _build_form() -> aiohttp.FormData:
-        form = aiohttp.FormData()
-        form.add_field(
-            "photo",
+    if not camera_entity:
+        file_bytes, content_type, upload_filename, _ = await hass.async_add_executor_job(
+            _normalize_image_for_vk_sync,
             file_bytes,
-            filename=filename,
-            content_type=content_type,
+            content_type,
+            False,
         )
-        return form
 
-    upload_result = await _post_multipart_to_vk(
-        session=vk_session,
-        upload_url=upload_url,
-        form_factory=_build_form,
-        timeout_ctx=timeout_ctx,
-        media_label="photo",
-        filename=filename,
-        content_type=content_type,
-        file_size=len(file_bytes),
-    )
+    upload_result: dict[str, Any] = {}
+    photo_payload: Any = None
 
-    photo_payload = upload_result.get("photo")
+    for attempt in range(2):
+        req_params: dict[str, Any] = {
+            "access_token": access_token,
+            "v": VK_API_VERSION,
+        }
+        if attempt == 0 and peer_id:
+            req_params["peer_id"] = peer_id
+
+        async with vk_session.get(
+            VK_API_PHOTO_UPLOAD_SERVER,
+            params=req_params,
+            timeout=timeout_ctx,
+        ) as resp:
+            data = await resp.json(content_type=None)
+        if "error" in data:
+            raise HomeAssistantError(
+                f"VK API error (getUploadServer): {redact_vk_payload(data['error'])}"
+            )
+
+        upload_url = data.get("response", {}).get("upload_url")
+        if not upload_url:
+            raise HomeAssistantError(
+                f"VK API did not return upload_url: {redact_vk_payload(data)}"
+            )
+
+        def _build_form() -> aiohttp.FormData:
+            form = aiohttp.FormData()
+            form.add_field(
+                "photo",
+                file_bytes,
+                filename=upload_filename,
+                content_type=content_type,
+            )
+            return form
+
+        upload_result = await _post_multipart_to_vk(
+            session=vk_session,
+            upload_url=upload_url,
+            form_factory=_build_form,
+            timeout_ctx=timeout_ctx,
+            media_label="photo",
+            filename=upload_filename,
+            content_type=content_type,
+            file_size=len(file_bytes),
+        )
+
+        photo_payload = upload_result.get("photo")
+        if "error" not in upload_result and photo_payload and photo_payload != "[]":
+            break
+
+        if attempt == 0:
+            _LOGGER.warning(
+                "VK upload server returned empty photo for %s (size=%d), re-encoding image and retrying...",
+                camera_entity or filename,
+                len(file_bytes),
+            )
+            await asyncio.sleep(0.7)
+            if camera_entity:
+                try:
+                    from homeassistant.components import camera as ha_camera  # noqa: PLC0415
+
+                    fresh_img = await ha_camera.async_get_image(
+                        hass, camera_entity, timeout=timeout
+                    )
+                    if fresh_img.content and len(fresh_img.content) > 512:
+                        file_bytes = fresh_img.content
+                except Exception:
+                    pass
+            file_bytes, content_type, upload_filename, _ = (
+                await hass.async_add_executor_job(
+                    _normalize_image_for_vk_sync, file_bytes, content_type, True
+                )
+            )
+
     if "error" in upload_result or not photo_payload or photo_payload == "[]":
         safe_result = redact_vk_payload(upload_result)
         _LOGGER.error(
-            "VK photo upload returned empty/error photo field (filename=%s, content_type=%s, size=%d): %s",
-            filename,
+            "VK photo upload returned empty/error photo field (source=%s, content_type=%s, size=%d): %s",
+            camera_entity or filename,
             content_type,
             len(file_bytes),
             safe_result,
         )
         raise HomeAssistantError(
-            f"Photo upload error (file={filename}, mime={content_type}, size={len(file_bytes)} B): {safe_result}"
+            f"Photo upload error (source={camera_entity or filename}, mime={content_type}, size={len(file_bytes)} B): {safe_result}"
         )
 
     async with vk_session.post(
@@ -808,18 +930,46 @@ async def async_upload_photos(
         )
 
     attachments: list[str] = []
-    for item in tasks[:10]:
-        att = await async_upload_photo(
-            hass,
-            access_token,
-            peer_id,
-            url=item.get("url"),
-            filepath=item.get("filepath"),
-            camera_entity=item.get("camera_entity"),
-            verify_ssl=verify_ssl,
-            timeout=timeout,
+    errors: list[str] = []
+    total_tasks = len(tasks[:10])
+
+    for idx, item in enumerate(tasks[:10]):
+        if idx > 0:
+            await asyncio.sleep(0.35)
+        try:
+            att = await async_upload_photo(
+                hass,
+                access_token,
+                peer_id,
+                url=item.get("url"),
+                filepath=item.get("filepath"),
+                camera_entity=item.get("camera_entity"),
+                verify_ssl=verify_ssl,
+                timeout=timeout,
+            )
+            attachments.append(att)
+        except Exception as err:
+            src_label = (
+                item.get("camera_entity")
+                or item.get("filepath")
+                or item.get("url")
+                or f"item_{idx + 1}"
+            )
+            if total_tasks == 1:
+                raise
+            _LOGGER.warning(
+                "Не удалось загрузить фото %d/%d (%s), пропускаем: %s",
+                idx + 1,
+                total_tasks,
+                redact_sensitive_text(src_label),
+                redact_sensitive_text(err),
+            )
+            errors.append(f"{src_label}: {err}")
+
+    if not attachments:
+        raise HomeAssistantError(
+            f"Не удалось загрузить ни одного фото из {total_tasks}: {'; '.join(errors)}"
         )
-        attachments.append(att)
 
     return ",".join(attachments)
 

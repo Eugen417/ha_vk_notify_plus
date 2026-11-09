@@ -425,6 +425,10 @@
         "conversation_message_id": {
           "name": "Идентификатор сообщения (cmid)",
           "description": "ID сообщения внутри чата (cmid)."
+        },
+        "delete_for_all": {
+          "name": "Удалить для всех",
+          "description": "Удаляет сообщение у всех участников чата."
         }
       }
     },

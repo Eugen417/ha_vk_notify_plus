@@ -548,9 +548,16 @@ delete_message:
   fields:
     conversation_message_id:
       name: Идентификатор сообщения (cmid)
-      required: true
+      required: false
       selector:
         text: {}
+    delete_for_all:
+      name: Удалить для всех
+      description: Удаляет сообщение у всех участников чата.
+      required: false
+      default: true
+      selector:
+        boolean: {}
 
 send_sticker:
   name: "Отправить стикер"

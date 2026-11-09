@@ -153,7 +153,7 @@ class VkNotifyEntity(NotifyEntity):
             params["keyboard"] = build_vk_keyboard(
                 kwargs["keyboard"],
                 inline_keyboard=kwargs.get("inline_keyboard"),
-                auto_answer_callback=kwargs.get("auto_answer_callback", True),
+                auto_answer_callback=bool(kwargs.get("auto_answer_callback", False)),
             )
 
     async def async_send_message(self, message: str, title: str | None = None, **kwargs) -> ServiceResponse:
@@ -289,7 +289,7 @@ class VkNotifyEntity(NotifyEntity):
             params["keyboard"] = build_vk_keyboard(
                 kwargs["keyboard"],
                 inline_keyboard=kwargs.get("inline_keyboard"),
-                auto_answer_callback=kwargs.get("auto_answer_callback", True),
+                auto_answer_callback=bool(kwargs.get("auto_answer_callback", False)),
             )
         if kwargs.get("message_id"):
             params["message_id"] = int(kwargs["message_id"])
@@ -342,7 +342,8 @@ class VkNotifyEntity(NotifyEntity):
         )
 
     async def async_delete_message(self, **kwargs: Any) -> None:
-        params: dict[str, Any] = {"delete_for_all": 1}
+        delete_for_all = 1 if kwargs.get("delete_for_all", True) else 0
+        params: dict[str, Any] = {"delete_for_all": delete_for_all}
         if kwargs.get("message_id"):
             params["message_ids"] = int(kwargs["message_id"])
         elif kwargs.get("conversation_message_id"):
@@ -387,10 +388,20 @@ class VkNotifyEntity(NotifyEntity):
         elif kwargs.get("conversation_message_id"): params["conversation_message_id"] = int(kwargs["conversation_message_id"])
         await self._internal_send(VK_API_UNPIN, params)
 
-    async def async_answer_callback(self, event_id: str, user_id: Any, message: str | None = None, **kwargs) -> None:
-        params = {"event_id": event_id, "user_id": int(user_id)}
-        if message: params["event_data"] = json.dumps({"type": "show_snackbar", "text": message[:90]}, ensure_ascii=False)
-        await self._internal_send(VK_API_EVENT_ANSWER, params)
+    async def async_answer_callback(
+        self, event_id: str, user_id: Any, message: str | None = None, **kwargs: Any
+    ) -> None:
+        params: dict[str, Any] = {"event_id": event_id, "user_id": int(user_id)}
+        if message:
+            params["event_data"] = json.dumps(
+                {"type": "show_snackbar", "text": message[:90]}, ensure_ascii=False
+            )
+        try:
+            await self._internal_send(VK_API_EVENT_ANSWER, params)
+        except HomeAssistantError as err:
+            if "invalid event_id" in str(err):
+                return
+            raise
 
     async def async_get_user_info(self, user_id: Any, **kwargs: Any) -> ServiceResponse:
         uid = str(user_id).replace("[VK ID: ", "").replace("]", "").strip()

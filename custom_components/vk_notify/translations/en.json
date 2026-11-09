@@ -425,6 +425,10 @@
         "conversation_message_id": {
           "name": "Conversation Message ID",
           "description": "Message ID within the chat (cmid)."
+        },
+        "delete_for_all": {
+          "name": "Delete for all",
+          "description": "Deletes the message for all chat participants."
         }
       }
     },

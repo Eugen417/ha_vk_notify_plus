@@ -18,7 +18,7 @@ COMMON_FIELDS = {
     vol.Optional("payload"): cv.string,
     vol.Optional("keyboard"): dict,
     vol.Optional("inline_keyboard"): cv.boolean,
-    vol.Optional("auto_answer_callback", default=True): cv.boolean,
+    vol.Optional("auto_answer_callback"): cv.boolean,
     vol.Optional("reply_to"): INT_STR,
     vol.Optional("timeout", default=60): cv.positive_int,
     vol.Optional("parse_mode", default="html"): PARSE_MODE_VALIDATOR,
@@ -70,7 +70,7 @@ SCHEMA_EDIT_MESSAGE = {
     vol.Optional("attachment"): cv.string,
     vol.Optional("keyboard"): dict,
     vol.Optional("inline_keyboard"): cv.boolean,
-    vol.Optional("auto_answer_callback", default=True): cv.boolean,
+    vol.Optional("auto_answer_callback"): cv.boolean,
     vol.Optional("disable_mentions"): cv.boolean,
     vol.Optional("parse_mode", default="html"): PARSE_MODE_VALIDATOR,
 }
@@ -85,6 +85,7 @@ SCHEMA_WALL_POST = {
 SCHEMA_DELETE_MESSAGE = {
     vol.Optional("message_id"): INT_STR,
     vol.Optional("conversation_message_id"): INT_STR,
+    vol.Optional("delete_for_all", default=True): cv.boolean,
 }
 
 SCHEMA_SET_ACTIVITY = {
