@@ -29,10 +29,21 @@ jobs:
           tag = os.environ["TAG"]
           token = os.environ["TOKEN"]
 
+          body = (
+              f"## VK Notify {tag}\n\n"
+              "- Иерархия **«Сообщество (Бот ВК) → Чаты» (`ConfigSubentry`)**: добавление чатов кнопкой «Добавить чат» без повторного ввода токена и мультивыбор чатов при настройке.\n"
+              "- Прямая отправка снимков с одной или нескольких камер Home Assistant (`camera_entity`, до 10 камер одним сообщением-альбомом) в оперативной памяти без записи на диск.\n"
+              "- Автоматическое определение MIME-типа по magic bytes (`JPEG`, `PNG`, `GIF`, `WebP`, `BMP`), восстановление обрезанных RTSP-кадров (`LOAD_TRUNCATED_IMAGES`), ресайз до `2560 px` и перекодирование в `baseline RGB JPEG`.\n"
+              "- Поддержка `media-source://` и `url` для отправки документов.\n"
+              "- Приём входящих вложений (`attachments`), геолокации (`geo`) и текстовой расшифровки голосовых сообщений (`transcript`) в Long Poll.\n"
+              "- Выгрузка обезличенной диагностики (`diagnostics.py`) и автоматическое маскирование токенов/паролей/хэшей в логах.\n"
+              "- Полная совместимость с **Home Assistant 2026.11+** и **VK API v5.199**."
+          )
+
           payload = json.dumps({
               "tag_name": tag,
               "name": f"VK Notify {tag}",
-              "body": f"Release {tag}",
+              "body": body,
               "draft": False,
               "prerelease": False,
           }).encode("utf-8")
@@ -41,9 +52,10 @@ jobs:
               f"{api_url}/repos/{repo}/releases",
               data=payload,
               headers={
-                  "Authorization": f"token {token}",
+                  "Authorization": f"Bearer {token}",
                   "Content-Type": "application/json",
                   "Accept": "application/json",
+                  "User-Agent": "ha-vk-notify-plus-release",
               },
               method="POST",
           )
