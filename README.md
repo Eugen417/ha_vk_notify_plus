@@ -55,7 +55,7 @@
 
 ### Установка через HACS / Marketplace (HA 2026.11+)
 
-[![Открыть в Home Assistant и установить VK Notify через HACS.](badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Eugen417&repository=ha_vk_notify_plus&category=integration)
+[![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=Eugen417&repository=ha_vk_notify_plus&category=integration)
 
 Если кнопка не работает: добавьте пользовательский репозиторий `https://github.com/Eugen417/ha_vk_notify_plus` в HACS / Marketplace вручную (категория: **Интеграция**), установите **VK Notify** и перезапустите Home Assistant.
 
