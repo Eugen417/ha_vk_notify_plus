@@ -117,10 +117,6 @@
       "name": "Send message",
       "description": "Sends a text notification, media, coordinates, or carousel.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "title": {
           "name": "Title",
           "description": "Optional title. Added as the first line before the message with a double line break."
@@ -183,10 +179,6 @@
       "name": "Send photo",
       "description": "Send a photo via VK.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "message": {
           "name": "Caption",
           "description": "Optional text below the photo."
@@ -241,10 +233,6 @@
       "name": "Send file",
       "description": "Send a file via VK.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "file": {
           "name": "Local file path or media-source://",
           "description": "Local file path to send (or specify URL)."
@@ -295,10 +283,6 @@
       "name": "Send video",
       "description": "Sends a video file (.mp4) as a native VK video. WARNING: Requires a user token!",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "video_access_token": {
           "name": "User Token",
           "description": "A real VK user token with video and messages permissions."
@@ -353,10 +337,6 @@
       "name": "Send voice message",
       "description": "Sends an audio file (.ogg) as a native voice message.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "file": {
           "name": "Local audio path",
           "description": "Local path to the .ogg file on the HA server."
@@ -403,10 +383,6 @@
       "name": "Post to wall",
       "description": "Publish a post on the VK community wall. Returns post_id.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "message": {
           "name": "Post text",
           "description": "Text of the post."
@@ -425,10 +401,6 @@
       "name": "Edit message",
       "description": "Edits the text, keyboard, and attachments of a previously sent message.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "message": {
           "name": "New message text",
           "description": "New text of the message."
@@ -463,10 +435,6 @@
       "name": "Delete message",
       "description": "Deletes a message for all chat participants.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "conversation_message_id": {
           "name": "Conversation Message ID",
           "description": "Message ID within the chat (cmid)."
@@ -481,10 +449,6 @@
       "name": "Set activity status",
       "description": "Shows typing or recording audio status in the chat.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "type": {
           "name": "Activity type",
           "description": "typing or audiomsg."
@@ -495,10 +459,6 @@
       "name": "Send reaction",
       "description": "Sets an emoji reaction to a specific message.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "conversation_message_id": {
           "name": "Conversation Message ID",
           "description": "Message ID in the chat to react to."
@@ -513,10 +473,6 @@
       "name": "Pin message",
       "description": "Pins the specified message in the chat.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "conversation_message_id": {
           "name": "Conversation Message ID",
           "description": "Message ID within the chat (cmid)."
@@ -527,10 +483,6 @@
       "name": "Unpin message",
       "description": "Unpins a message in the chat. If no ID is provided, unpins the currently pinned message.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "conversation_message_id": {
           "name": "Conversation Message ID",
           "description": "Message ID within the chat (cmid). If empty, unpins the last pinned message."
@@ -541,10 +493,6 @@
       "name": "Answer Callback (Snackbar)",
       "description": "Stops the loading spinner on an inline button and optionally shows a snackbar notification.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "event_id": {
           "name": "Event ID",
           "description": "Event ID from trigger.event.data.event_id."
@@ -563,10 +511,6 @@
       "name": "Edit chat title",
       "description": "Changes the title of a group chat (Bot must be an admin!).",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "title": {
           "name": "New title",
           "description": "Supports emojis."
@@ -577,10 +521,6 @@
       "name": "Get user info",
       "description": "Requests user data. Returns First Name, Last Name, and Online status.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "user_id": {
           "name": "VK User ID",
           "description": "Numeric User ID (or from_id from an event)."
@@ -591,10 +531,6 @@
       "name": "Send sticker",
       "description": "Sends a VK sticker by its internal ID.",
       "fields": {
-        "entity_id": {
-          "name": "Entity",
-          "description": "VK Notify entity."
-        },
         "sticker_id": {
           "name": "Sticker ID",
           "description": "Sequence number of the sticker (e.g., 3 for Spotty dog)."

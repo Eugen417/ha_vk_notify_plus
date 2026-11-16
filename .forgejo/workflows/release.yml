@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create Release via Forgejo API
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_URL: ${{ github.api_url }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - << 'EOF'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          api_url = os.environ["API_URL"].rstrip("/").replace("http://server:3000", "http://192.168.1.9:3100")
+          repo = os.environ["REPO"]
+          tag = os.environ["TAG"]
+          token = os.environ["TOKEN"]
+
+          body = (
+              f"## VK Notify {tag}\n\n"
+              "- Added full English documentation (`README.en.md`) and language switcher (`🇷🇺 Русский | 🇬🇧 English`).\n"
+              "- Official Home Assistant `Hassfest` and `HACS Validation` CI compliance (`icons.json` entity schema and `services.yaml` translation parity).\n"
+              "- **Community (Bot) → Chats (`ConfigSubentry`)** hierarchy, zero-disk multi-camera album capture (`camera_entity`, up to 10 cameras), Long Poll incoming attachments & voice transcripts (`transcript`), and full compatibility with **Home Assistant 2026.11+** and **VK API v5.199**."
+          )
+
+          payload = json.dumps({
+              "tag_name": tag,
+              "name": f"VK Notify {tag}",
+              "body": body,
+              "draft": False,
+              "prerelease": False,
+          }).encode("utf-8")
+
+          req = urllib.request.Request(
+              f"{api_url}/repos/{repo}/releases",
+              data=payload,
+              headers={
+                  "Authorization": f"Bearer {token}",
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+                  "User-Agent": "ha-vk-notify-plus-release",
+              },
+              method="POST",
+          )
+
+          try:
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  print(f"Release {tag} created successfully (HTTP {resp.status})")
+          except urllib.error.HTTPError as err:
+              if err.code in (409, 422):
+                  print(f"Release {tag} already exists (HTTP {err.code}), skipping creation")
+              else:
+                  raise
+          EOF

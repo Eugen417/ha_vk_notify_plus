@@ -72,6 +72,7 @@ async def async_setup_entry(
 
 class VkNotifyEntity(NotifyEntity):
     _attr_supported_features = NotifyEntityFeature.TITLE
+    _attr_translation_key = "vk_notify"
 
     def __init__(
         self,

@@ -1,7 +1,9 @@
 {
   "entity": {
     "notify": {
-      "default": "mdi:message-text-outline"
+      "vk_notify": {
+        "default": "mdi:message-text-outline"
+      }
     }
   },
   "services": {

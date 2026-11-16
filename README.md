@@ -7,17 +7,21 @@
 <p align="center">
   <img alt="HA Validation" src="badges/ha_validation.svg" />
   <a href="https://github.com/hacs/integration"><img alt="hacs_badge" src="badges/hacs.svg" /></a>
-  <img alt="Release v1.0.0" src="badges/release.svg" />
+  <img alt="Release v1.0.1" src="badges/release.svg" />
   <a href="https://www.home-assistant.io/"><img alt="Home Assistant" src="badges/home_assistant.svg" /></a>
   <img alt="VK Notify" src="badges/stars.svg" />
   <a href="LICENSE"><img alt="License: MIT" src="badges/license.svg" /></a>
+</p>
+
+<p align="center">
+  <b>🇷🇺 Русский</b> | <a href="README.en.md">🇬🇧 English</a>
 </p>
 
 Интеграция **VK Notify** для **Home Assistant** — отправка текстовых уведомлений, фотографий (напрямую с камер Home Assistant `camera.*`, снимков **Frigate** по URL или из локальных файлов, включая альбомы до 10 вложений), документов, голосовых и нативных видеосообщений, интерактивных клавиатур, каруселей и приём входящих команд, голосовых сообщений (`transcript`) и нажатий кнопок через **VK API (v5.199)** и **Bots Long Poll API**. Полностью совместима с **Home Assistant 2026.11+**.
 
 ---
 
-## ✨ Главные возможности версии 1.0.0
+## ✨ Главные возможности
 
 * 🧩 **Иерархия «Сообщество (Бот) → Чаты» (`ConfigSubentry`, стандарт HA 2026):** Вы добавляете сообщество (бота ВК) **один раз** со своим токеном, а внутри карточки этого сообщества в 1 клик кнопкой **«Добавить чат»** подключаете любое количество бесед и личных диалогов без повторного ввода токена! При первичной настройке также можно отметить галочками сразу несколько чатов.
 * 📷 **Прямая отправка снимков с одной или нескольких камер (`camera_entity` в `send_photo`) и альбомов (до 10 вложений):** Передайте одну или список сущностей камер Home Assistant (`camera.front_door`, `camera.backyard`), список `url` или `file`, и интеграция мгновенно снимет кадры в памяти через `camera.async_get_image` и отправит их одним сообщением-альбомом без сохранения временных файлов в `/config/www/`.
