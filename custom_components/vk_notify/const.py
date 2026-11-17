@@ -47,3 +47,10 @@ VK_API_USERS_GET = f"{VK_API_BASE}/users.get"
 # 6 = Too many requests per second, 9 = Flood control, 10 = Internal server error
 VK_RETRYABLE_ERROR_CODES = {6, 9, 10}
 
+# Permanent authorization / permission denied VK API error codes:
+# 5 = User/community auth failed, 7 = Permission denied, 15 = Access denied,
+# 17 = Validation required, 27 = Group auth failed, 28 = App auth failed,
+# 1114 / 1116 = Invalid or anonymous token
+VK_AUTH_ERROR_CODES = {5, 7, 15, 17, 27, 28, 1114, 1116}
+
+

@@ -126,10 +126,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: VkNotifyConfigEntry) -> 
                 entry.data[CONF_ACCESS_TOKEN],
                 group_id,
                 verify_ssl=verify_ssl,
+                entry=entry,
             )
             lp_managers[group_id] = {"manager": manager, "refcount": 1}
             manager.start()
         else:
+            lp_managers[group_id]["manager"].register_entry(entry)
             lp_managers[group_id]["refcount"] += 1
 
     return True
@@ -140,6 +142,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: VkNotifyConfigEntry) ->
     if entry.data.get(CONF_MODE) == MODE_LONGPOLL and group_id:
         lp_managers: dict = hass.data[DOMAIN]["lp_managers"]
         if group_id in lp_managers:
+            lp_managers[group_id]["manager"].unregister_entry(entry.entry_id)
             lp_managers[group_id]["refcount"] -= 1
             if lp_managers[group_id]["refcount"] <= 0:
                 await lp_managers[group_id]["manager"].stop()

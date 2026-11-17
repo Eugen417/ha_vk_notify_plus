@@ -25,6 +25,7 @@ TO_REDACT = {
     "key",
     "hash",
     "secret",
+    "name",
 }
 
 
@@ -63,11 +64,22 @@ async def async_get_config_entry_diagnostics(
     ent_reg = er.async_get(hass)
     entities = er.async_entries_for_config_entry(ent_reg, entry.entry_id)
     entity_states = []
-    for ent in entities:
+    for idx, ent in enumerate(entities, start=1):
         state = hass.states.get(ent.entity_id)
+        ent_peer = None
+        if ent.config_subentry_id and ent.config_subentry_id in entry.subentries:
+            ent_peer = entry.subentries[ent.config_subentry_id].data.get(CONF_PEER_ID)
+        elif "_" in ent.unique_id:
+            tail = ent.unique_id.rsplit("_", 1)[-1]
+            if tail.lstrip("-").isdigit():
+                ent_peer = tail
+        elif peer_id is not None:
+            ent_peer = peer_id
+
         entity_states.append(
             {
-                "entity_id": ent.entity_id,
+                "index": idx,
+                "masked_peer_id": _mask_id(ent_peer),
                 "disabled": ent.disabled,
                 "state": state.state if state else None,
                 "has_last_message_id": bool(
@@ -81,7 +93,6 @@ async def async_get_config_entry_diagnostics(
         {
             "subentry_id": sub.subentry_id,
             "subentry_type": sub.subentry_type,
-            "title": sub.title,
             "peer_id": _mask_id(sub.data.get(CONF_PEER_ID)),
         }
         for sub in entry.subentries.values()

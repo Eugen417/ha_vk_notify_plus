@@ -11,21 +11,32 @@ import logging
 from typing import Any
 
 import aiohttp
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
+    CONF_GROUP_ID,
     CONF_PEER_ID,
     DOMAIN,
     VK_API_EVENT_ANSWER,
     VK_API_LONGPOLL_SERVER,
     VK_API_MARK_AS_READ,
     VK_API_VERSION,
+    VK_AUTH_ERROR_CODES,
 )
 from .formatting import redact_sensitive_text, redact_vk_payload
 
 _LOGGER = logging.getLogger(__name__)
+
+LP_INITIAL_BACKOFF = 5.0
+LP_MAX_BACKOFF = 300.0
+LP_BACKOFF_FACTOR = 2.0
+
+
+class VkLongPollAuthError(Exception):
+    """Raised when VK Long Poll fails due to an invalid, revoked, or unauthorized token."""
 
 
 def extract_vk_attachments(
@@ -103,13 +114,33 @@ def extract_vk_attachments(
 
 
 class VkLongPollManager:
-    def __init__(self, hass: HomeAssistant, access_token: str, group_id: int, verify_ssl: bool = True) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        access_token: str,
+        group_id: int,
+        verify_ssl: bool = True,
+        entry: ConfigEntry | None = None,
+    ) -> None:
         self._hass, self._access_token, self._group_id = hass, access_token, group_id
         self._verify_ssl = verify_ssl
         self._task: asyncio.Task | None = None
+        self._entries: dict[str, ConfigEntry] = (
+            {entry.entry_id: entry} if entry is not None else {}
+        )
+
+    def register_entry(self, entry: ConfigEntry) -> None:
+        """Register an additional config entry sharing this community Long Poll loop."""
+        self._entries[entry.entry_id] = entry
+
+    def unregister_entry(self, entry_id: str) -> None:
+        """Unregister a config entry when unloaded."""
+        self._entries.pop(entry_id, None)
 
     def start(self) -> None:
-        self._task = self._hass.async_create_background_task(self._run(), f"vk_longpoll_{self._group_id}")
+        self._task = self._hass.async_create_background_task(
+            self._run(), f"vk_longpoll_{self._group_id}"
+        )
 
     async def stop(self) -> None:
         if self._task:
@@ -120,15 +151,37 @@ class VkLongPollManager:
                 pass
             self._task = None
 
+    def _trigger_reauth(self) -> None:
+        """Initiate Home Assistant reauthentication flow on all associated entries."""
+        targets = list(self._entries.values())
+        if not targets:
+            targets = [
+                ent
+                for ent in self._hass.config_entries.async_entries(DOMAIN)
+                if ent.data.get(CONF_GROUP_ID) == self._group_id
+            ]
+        for ent in targets:
+            ent.async_start_reauth(self._hass)
+
     async def _get_server(self) -> tuple[str, str, str]:
         session = async_get_clientsession(self._hass, verify_ssl=self._verify_ssl)
         async with session.get(
             VK_API_LONGPOLL_SERVER,
-            params={"access_token": self._access_token, "group_id": self._group_id, "v": VK_API_VERSION},
+            params={
+                "access_token": self._access_token,
+                "group_id": self._group_id,
+                "v": VK_API_VERSION,
+            },
         ) as resp:
             data = await resp.json(content_type=None)
         if "error" in data:
-            raise RuntimeError(f"VK API Error: {redact_vk_payload(data['error'])}")
+            err_obj = data["error"]
+            err_code = err_obj.get("error_code") if isinstance(err_obj, dict) else None
+            if err_code in VK_AUTH_ERROR_CODES:
+                raise VkLongPollAuthError(
+                    f"VK Long Poll authorization failed (code {err_code}): {redact_vk_payload(err_obj)}"
+                )
+            raise RuntimeError(f"VK API Error: {redact_vk_payload(err_obj)}")
         r = data["response"]
         return r["server"], r["key"], r["ts"]
 
@@ -137,6 +190,7 @@ class VkLongPollManager:
         server: str | None = None
         key: str = ""
         ts: str = ""
+        backoff: float = LP_INITIAL_BACKOFF
 
         while True:
             try:
@@ -153,11 +207,14 @@ class VkLongPollManager:
                 failed = data.get("failed")
                 if failed == 1:
                     ts = data["ts"]
+                    backoff = LP_INITIAL_BACKOFF
                     continue
                 if failed in (2, 3):
                     server, key, ts = await self._get_server()
+                    backoff = LP_INITIAL_BACKOFF
                     continue
 
+                backoff = LP_INITIAL_BACKOFF
                 ts = data["ts"]
                 for update in data.get("updates", []):
                     self._handle_update(update)
@@ -165,10 +222,22 @@ class VkLongPollManager:
                 raise
             except asyncio.TimeoutError:
                 continue
+            except VkLongPollAuthError as err:
+                _LOGGER.error(
+                    "%s. Stopping Long Poll and starting reauthentication.",
+                    redact_sensitive_text(err),
+                )
+                self._trigger_reauth()
+                return
             except Exception as err:
-                _LOGGER.warning("VK LP error: %s. Reconnecting in 5s...", redact_sensitive_text(err))
+                _LOGGER.warning(
+                    "VK LP error: %s. Reconnecting in %.0fs...",
+                    redact_sensitive_text(err),
+                    backoff,
+                )
                 server = None
-                await asyncio.sleep(5)
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * LP_BACKOFF_FACTOR, LP_MAX_BACKOFF)
 
     def _handle_update(self, update: dict[str, Any]) -> None:
         upd_type, obj = update.get("type"), update.get("object", {})

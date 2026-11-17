@@ -2,542 +2,553 @@
   "config": {
     "step": {
       "user": {
-        "title": "Настройка сообщества VK Notify",
-        "description": "1. **Основной токен сообщества (обязательно):** откройте [Мои сообщества ВКонтакте]({vk_groups_url}) → **Управление → Дополнительно → Работа с API → Ключи доступа → Создать ключ** ([пошаговая инструкция с картинками]({docs_url})).\n2. **Токен для видео (необязательно):** нужен только если вы планируете отправлять видеоролики через `send_video` ([как получить]({video_docs_url})).",
+        "title": "Set up VK Notify Community",
+        "description": "1. **Main Community Token (required):** open [My VK Communities]({vk_groups_url}) → **Manage → Additional → API usage → Access tokens → Create token** ([step-by-step illustrated guide]({docs_url})).\n2. **Video User Token (optional):** only needed if you use the `send_video` service ([how to get]({video_docs_url})).",
         "data": {
-          "access_token": "Токен доступа сообщества (Основной)",
-          "name": "Название",
-          "video_access_token": "Токен пользователя для видео (необязательно)",
-          "verify_ssl": "Проверять SSL-сертификаты"
+          "access_token": "Community Access Token (Main)",
+          "name": "Name",
+          "video_access_token": "User Token for Video (optional)",
+          "verify_ssl": "Verify SSL certificates"
         },
         "data_description": {
-          "access_token": "Обязательный ключ API сообщества ВК (права: Управление сообществом, Сообщения, Фотографии, Документы)",
-          "name": "Отображаемое имя уведомителя (название группы из ВК добавится автоматически)",
-          "video_access_token": "Оставьте пустым, если не используете службу send_video",
-          "verify_ssl": "ОТКЛЮЧИТЕ это, если отправляете файлы с локальных IP-адресов по HTTPS (устраняет ошибку SSL-сертификата)."
+          "access_token": "Required VK community bot token (permissions: Community management, Messages, Photos, Documents)",
+          "name": "Friendly name prefix (community name from VK is appended automatically)",
+          "video_access_token": "Leave empty if you do not use the send_video service",
+          "verify_ssl": "DISABLE this if you send files from local IP addresses via HTTPS (fixes SSL certificate errors)."
         }
       },
       "select_mode": {
-        "title": "Режим подключения",
-        "description": "Выберите способ подключения интеграции к VK.",
+        "title": "Connection mode",
+        "description": "Choose how the integration connects to VK.",
         "data": {
-          "mode": "Режим"
+          "mode": "Mode"
         }
       },
       "select_chat": {
-        "title": "Выберите чаты сообщества",
-        "description": "Выберите один или сразу несколько чатов этого сообщества, для которых будут созданы уведомители.\n\nПозже вы сможете в любой момент добавлять новые чаты кнопкой «Добавить чат» в карточке сообщества без повторного ввода токена.",
+        "title": "Select community chats",
+        "description": "Select one or multiple chats of this community to create notification entities for.\n\nYou can add more chats at any time using the 'Add chat' button on the community card without re-entering the token.",
         "data": {
-          "peer_id": "Чаты"
+          "peer_id": "Chats"
         }
       },
       "reconfigure": {
-        "title": "Настройки сообщества VK",
-        "description": "Измените токен, режим подключения (API / Long Poll), токен для видео или настройки SSL этого сообщества.",
+        "title": "VK Community settings",
+        "description": "Update the token, connection mode (API / Long Poll), video token, or SSL settings for this community.",
         "data": {
-          "access_token": "Токен доступа сообщества",
-          "name": "Название",
-          "mode": "Режим",
-          "video_access_token": "Токен пользователя для видео (необязательно)",
-          "verify_ssl": "Проверять SSL-сертификаты"
+          "access_token": "Community Access Token",
+          "name": "Name",
+          "mode": "Mode",
+          "video_access_token": "User Token for Video (optional)",
+          "verify_ssl": "Verify SSL certificates"
         },
         "data_description": {
-          "video_access_token": "Необязательный User Token ВК для службы send_video",
-          "verify_ssl": "ОТКЛЮЧИТЕ это, если отправляете файлы с локальных IP-адресов по HTTPS (устраняет ошибку SSL-сертификата)."
+          "video_access_token": "Optional VK User Token for send_video service",
+          "verify_ssl": "DISABLE this if you send files from local IP addresses via HTTPS (fixes SSL certificate errors)."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate VK Notify Community",
+        "description": "The VK community access token is invalid, expired, or lacks required permissions. Please enter a new community access token.",
+        "data": {
+          "access_token": "Community Access Token"
+        },
+        "data_description": {
+          "access_token": "Required VK community bot token (permissions: Community management, Messages, Photos, Documents)"
         }
       }
     },
     "error": {
-      "invalid_token": "Неверный токен доступа или ошибка API. Проверьте токен.",
-      "cannot_connect": "Не удалось подключиться к VK API.",
-      "no_conversations": "Чаты не найдены. Убедитесь, что бот участвует хотя бы в одном чате.",
-      "group_id_required": "Не удалось определить ID сообщества из токена. Проверьте, что токен принадлежит сообществу.",
-      "longpoll_no_access": "Токен не имеет права использовать Long Poll. Перегенерируйте токен сообщества с включённым разрешением «Управление сообществом».",
-      "chat_not_writable": "Бот не может отправлять сообщения в этот чат. Выберите другой чат.",
-      "already_configured": "Этот чат уже добавлен в данное сообщество."
+      "invalid_token": "Invalid access token or API error. Please check your token.",
+      "cannot_connect": "Failed to connect to VK API.",
+      "no_conversations": "No conversations found. Make sure the bot has at least one conversation.",
+      "group_id_required": "Could not detect community ID from the token. Make sure the token belongs to a community.",
+      "longpoll_no_access": "The token does not have permission to use Long Poll. Re-generate the community token with 'Community management' permission enabled.",
+      "chat_not_writable": "The bot cannot send messages to this chat. Select a different chat.",
+      "already_configured": "This chat is already added to this community."
     },
     "abort": {
-      "already_configured": "Этот экземпляр VK Notify уже настроен.",
-      "reconfigure_successful": "Настройка успешно обновлена."
+      "already_configured": "This VK Notify instance is already configured.",
+      "reconfigure_successful": "Re-configuration was successful.",
+      "reauth_successful": "Re-authentication was successful."
     }
   },
   "config_subentries": {
     "chat": {
-      "entry_type": "Чат ВКонтакте",
+      "entry_type": "VK Chat",
       "initiate_flow": {
-        "user": "Добавить чат",
-        "reconfigure": "Изменить чат"
+        "user": "Add chat",
+        "reconfigure": "Reconfigure chat"
       },
       "step": {
         "user": {
-          "title": "Добавить чат сообщества",
-          "description": "Выберите чат из списка диалогов сообщества или введите числовой peer_id вручную.",
+          "title": "Add community chat",
+          "description": "Select a chat from the community conversations or enter a numeric peer_id manually.",
           "data": {
-            "peer_id": "Чат (peer_id)",
-            "name": "Префикс имени уведомителя"
+            "peer_id": "Chat (peer_id)",
+            "name": "Notifier name prefix"
           }
         },
         "reconfigure": {
-          "title": "Изменить чат сообщества",
-          "description": "Выберите чат из списка диалогов сообщества или введите числовой peer_id вручную.",
+          "title": "Reconfigure community chat",
+          "description": "Select a chat from the community conversations or enter a numeric peer_id manually.",
           "data": {
-            "peer_id": "Чат (peer_id)",
-            "name": "Префикс имени уведомителя"
+            "peer_id": "Chat (peer_id)",
+            "name": "Notifier name prefix"
           }
         },
         "set_chat": {
-          "title": "Настройка чата сообщества",
-          "description": "Выберите чат из списка диалогов сообщества или введите числовой peer_id вручную.",
+          "title": "Configure community chat",
+          "description": "Select a chat from the community conversations or enter a numeric peer_id manually.",
           "data": {
-            "peer_id": "Чат (peer_id)",
-            "name": "Префикс имени уведомителя"
+            "peer_id": "Chat (peer_id)",
+            "name": "Notifier name prefix"
           }
         }
       },
       "error": {
-        "chat_not_writable": "Бот не может отправлять сообщения в этот чат или указан некорректный ID.",
-        "already_configured": "Этот чат уже добавлен в данное сообщество."
+        "chat_not_writable": "The bot cannot send messages to this chat or the ID is invalid.",
+        "already_configured": "This chat is already added to this community."
       },
       "abort": {
-        "entry_not_loaded": "Сначала дождитесь загрузки интеграции сообщества.",
-        "reconfigure_successful": "Чат успешно обновлён."
+        "entry_not_loaded": "Cannot configure while community entry is not loaded.",
+        "reconfigure_successful": "Chat updated successfully."
       }
     }
   },
   "selector": {
     "mode": {
       "options": {
-        "api": "API — только отправка",
-        "longpoll": "Long Poll — отправка и получение входящих сообщений как событий HA"
+        "api": "API — send only",
+        "longpoll": "Long Poll — send and receive incoming messages as HA events"
       }
     }
   },
   "services": {
     "send_message": {
-      "name": "Отправить сообщение",
-      "description": "Отправляет текстовое уведомление, медиа, координаты или карусель.",
+      "name": "Send message",
+      "description": "Sends a text notification, media, coordinates, or carousel.",
       "fields": {
         "title": {
-          "name": "Заголовок",
-          "description": "Необязательный заголовок. Будет добавлен первой строкой с двойным отступом перед сообщением."
+          "name": "Title",
+          "description": "Optional title. Added as the first line before the message with a double line break."
         },
         "message": {
-          "name": "Сообщение",
-          "description": "Основной текст уведомления. Поддерживает эмодзи и перенос строк."
+          "name": "Message",
+          "description": "Main notification text. Supports emojis and line breaks."
         },
         "parse_mode": {
-          "name": "Режим разбора",
-          "description": "Парсер текста сообщения. Выберите «Обычный текст», чтобы отправить текст «как есть» без преобразования тегов."
+          "name": "Parse Mode",
+          "description": "Message text parser. Choose 'Plain text' to send raw text without formatting."
         },
         "attachment": {
-          "name": "Вложение (Медиа)",
-          "description": "Готовая строка медиафайла из ВК, например: photo123_456 или doc-789_012."
+          "name": "Attachment (Media)",
+          "description": "Ready-made media string from VK, e.g., photo123_456 or doc-789_012."
         },
         "disable_mentions": {
-          "name": "Без звука для упоминаний",
-          "description": "Отключает только специфический пуш об упоминании (@id). Внимание: стандартное уведомление о новом сообщении всё равно придет, если звук в чате не отключен."
+          "name": "Silent mentions",
+          "description": "Disables only the specific mention push (@id). Note: The standard new message notification will still arrive unless the chat is muted."
         },
         "inline_keyboard": {
-          "name": "Инлайн-клавиатура / Меню (клавиатура)",
-          "description": "ВКЛ: кнопки встроены в сообщение. ВЫКЛ: кнопки отображаются в меню под полем ввода."
+          "name": "Inline keyboard / Menu",
+          "description": "ON: buttons are embedded in the message. OFF: buttons are shown in the menu below the input field."
         },
         "auto_answer_callback": {
-          "name": "Автоответ на кнопки",
-          "description": "Установите false, чтобы кружок загрузки на кнопке не исчезал автоматически (для ручного управления через Снэкбары)."
+          "name": "Auto-answer callback",
+          "description": "Set to false to prevent the button loading spinner from disappearing automatically (for manual control via Snackbars)."
         },
         "keyboard": {
-          "name": "Клавиатура",
-          "description": "JSON-объект с кнопками (inline или обычными)."
+          "name": "Keyboard",
+          "description": "JSON object for inline or regular keyboard."
         },
         "template": {
-          "name": "Шаблон / Карусель (Template)",
-          "description": "JSON-объект карусели. По требованиям VK API должен содержать параметр 'type': 'carousel' и массив карточек 'elements' (не более 10 штук)."
+          "name": "Template / Carousel",
+          "description": "JSON object for the carousel. Per VK API requirements, it must contain 'type': 'carousel' and an 'elements' array (max 10 items)."
         },
         "payload": {
-          "name": "Скрытые данные (Payload)",
-          "description": "Невидимая строка данных, которая вернется боту при ответе или пересылке."
+          "name": "Hidden data (Payload)",
+          "description": "Invisible data string returned to the bot upon reply or forward."
         },
         "lat": {
-          "name": "Широта (Latitude)",
-          "description": "Координата широты для отправки геолокации."
+          "name": "Latitude",
+          "description": "Latitude coordinate for geolocation."
         },
         "long": {
-          "name": "Долгота (Longitude)",
-          "description": "Координата долготы для отправки геолокации."
+          "name": "Longitude",
+          "description": "Longitude coordinate for geolocation."
         },
         "timeout": {
-          "name": "Таймаут соединения",
-          "description": "Максимальное время ожидания ответа от серверов ВК (в секундах)."
+          "name": "Timeout",
+          "description": "Maximum response wait time from VK servers (in seconds)."
         },
         "reply_to": {
-          "name": "Ответить на сообщение",
-          "description": "Идентификатор сообщения (cmid) в беседе, на которое нужно ответить."
+          "name": "Reply to message",
+          "description": "Message ID (cmid) in the chat to reply to."
         }
       }
     },
     "send_photo": {
-      "name": "Отправить фото",
-      "description": "Отправляет фотографию через ВКонтакте.",
+      "name": "Send photo",
+      "description": "Send a photo via VK.",
       "fields": {
         "message": {
-          "name": "Подпись к фото",
-          "description": "Необязательный текст под фотографией."
+          "name": "Caption",
+          "description": "Optional text below the photo."
         },
         "parse_mode": {
-          "name": "Режим разбора",
-          "description": "Парсер текста сообщения. Выберите «Обычный текст», чтобы отправить текст «как есть» без преобразования тегов."
+          "name": "Parse Mode",
+          "description": "Message text parser. Choose 'Plain text' to send raw text without formatting."
         },
         "camera_entity": {
-          "name": "Камера Home Assistant",
-          "description": "Сущность камеры (например, camera.front_door) для мгновенной отправки снимка без сохранения на диск."
+          "name": "Home Assistant Camera",
+          "description": "Camera entity (e.g., camera.front_door) to capture and send a snapshot directly in memory."
         },
         "file": {
-          "name": "Локальный путь к файлу или media-source://",
-          "description": "Например, /config/www/image.jpg или media-source://..."
+          "name": "Local file path or media-source://",
+          "description": "E.g., /config/www/image.jpg or media-source://..."
         },
         "url": {
-          "name": "URL картинки",
-          "description": "Прямая ссылка на картинку в интернете."
+          "name": "Image URL",
+          "description": "Direct URL to the image."
         },
         "disable_mentions": {
-          "name": "Без звука для упоминаний",
-          "description": "Отключает только специфический пуш об упоминании (@id). Внимание: стандартное уведомление о новом сообщении всё равно придет, если звук в чате не отключен."
+          "name": "Silent mentions",
+          "description": "Disables only the specific mention push (@id). Note: The standard new message notification will still arrive unless the chat is muted."
         },
         "inline_keyboard": {
-          "name": "Инлайн-клавиатура / Меню (клавиатура)",
-          "description": "ВКЛ: кнопки встроены в сообщение. ВЫКЛ: кнопки отображаются в меню под полем ввода."
+          "name": "Inline keyboard / Menu",
+          "description": "ON: buttons are embedded in the message. OFF: buttons are shown in the menu below the input field."
         },
         "auto_answer_callback": {
-          "name": "Автоответ на кнопки",
-          "description": "Установите false, чтобы кружок загрузки на кнопке не исчезал автоматически (для ручного управления через Снэкбары)."
+          "name": "Auto-answer callback",
+          "description": "Set to false to prevent the button loading spinner from disappearing automatically (for manual control via Snackbars)."
         },
         "payload": {
-          "name": "Скрытые данные (Payload)",
-          "description": "Невидимая строка данных, которая вернется боту при ответе или пересылке."
+          "name": "Hidden data (Payload)",
+          "description": "Invisible data string returned to the bot upon reply or forward."
         },
         "keyboard": {
-          "name": "Клавиатура",
-          "description": "JSON-объект с кнопками (inline или обычными)."
+          "name": "Keyboard",
+          "description": "JSON object for inline or regular keyboard."
         },
         "timeout": {
-          "name": "Таймаут соединения",
-          "description": "Максимальное время ожидания ответа от серверов ВК (в секундах)."
+          "name": "Timeout",
+          "description": "Maximum response wait time from VK servers (in seconds)."
         },
         "reply_to": {
-          "name": "Ответить на сообщение",
-          "description": "Идентификатор сообщения (cmid) в беседе, на которое нужно ответить."
+          "name": "Reply to message",
+          "description": "Message ID (cmid) in the chat to reply to."
         }
       }
     },
     "send_file": {
-      "name": "Отправить файл",
-      "description": "Отправляет произвольный документ через ВКонтакте.",
+      "name": "Send file",
+      "description": "Send a file via VK.",
       "fields": {
         "file": {
-          "name": "Локальный путь к файлу или media-source://",
-          "description": "Локальный путь к отправляемому файлу (или укажите URL)."
+          "name": "Local file path or media-source://",
+          "description": "Local file path to send (or specify URL)."
         },
         "url": {
-          "name": "URL файла",
-          "description": "Прямая ссылка на скачивание документа по HTTP/HTTPS."
+          "name": "File URL",
+          "description": "Direct HTTP/HTTPS URL to download the document."
         },
         "message": {
-          "name": "Подпись к файлу",
-          "description": "Необязательная подпись к файлу."
+          "name": "Caption",
+          "description": "Optional caption for the file."
         },
         "parse_mode": {
-          "name": "Режим разбора",
-          "description": "Парсер текста сообщения. Выберите «Обычный текст», чтобы отправить текст «как есть» без преобразования тегов."
+          "name": "Parse Mode",
+          "description": "Message text parser. Choose 'Plain text' to send raw text without formatting."
         },
         "disable_mentions": {
-          "name": "Без звука для упоминаний",
-          "description": "Отключает только специфический пуш об упоминании (@id). Внимание: стандартное уведомление о новом сообщении всё равно придет, если звук в чате не отключен."
+          "name": "Silent mentions",
+          "description": "Disables only the specific mention push (@id). Note: The standard new message notification will still arrive unless the chat is muted."
         },
         "inline_keyboard": {
-          "name": "Инлайн-клавиатура / Меню (клавиатура)",
-          "description": "ВКЛ: кнопки встроены в сообщение. ВЫКЛ: кнопки отображаются в меню под полем ввода."
+          "name": "Inline keyboard / Menu",
+          "description": "ON: buttons are embedded in the message. OFF: buttons are shown in the menu below the input field."
         },
         "auto_answer_callback": {
-          "name": "Автоответ на кнопки",
-          "description": "Установите false, чтобы кружок загрузки на кнопке не исчезал автоматически (для ручного управления через Снэкбары)."
+          "name": "Auto-answer callback",
+          "description": "Set to false to prevent the button loading spinner from disappearing automatically (for manual control via Snackbars)."
         },
         "payload": {
-          "name": "Скрытые данные (Payload)",
-          "description": "Невидимая строка данных, которая вернется боту при ответе или пересылке."
+          "name": "Hidden data (Payload)",
+          "description": "Invisible data string returned to the bot upon reply or forward."
         },
         "keyboard": {
-          "name": "Клавиатура",
-          "description": "JSON-объект с кнопками (inline или обычными)."
+          "name": "Keyboard",
+          "description": "JSON object for inline or regular keyboard."
         },
         "timeout": {
-          "name": "Таймаут соединения",
-          "description": "Максимальное время ожидания ответа от серверов ВК (в секундах)."
+          "name": "Timeout",
+          "description": "Maximum response wait time from VK servers (in seconds)."
         },
         "reply_to": {
-          "name": "Ответить на сообщение",
-          "description": "Идентификатор сообщения (cmid) в беседе, на которое нужно ответить."
+          "name": "Reply to message",
+          "description": "Message ID (cmid) in the chat to reply to."
         }
       }
     },
     "send_video": {
-      "name": "Отправить видео",
-      "description": "Отправляет видео (.mp4) как нативное вложение с плеером ВК. Требует токен пользователя.",
+      "name": "Send video",
+      "description": "Sends a video file (.mp4) as a native VK video. WARNING: Requires a user token!",
       "fields": {
         "video_access_token": {
-          "name": "Токен пользователя (User Token)",
-          "description": "Авторизационный токен пользователя с правами video и messages."
+          "name": "User Token",
+          "description": "A real VK user token with video and messages permissions."
         },
         "file": {
-          "name": "Локальный путь к файлу",
-          "description": "Например, /media/frigate/clip.mp4"
+          "name": "Local file path",
+          "description": "E.g., /media/frigate/clip.mp4"
         },
         "url": {
-          "name": "URL видео",
-          "description": "Прямая ссылка на видеоролик (поддерживает локальные IP)."
+          "name": "Video URL",
+          "description": "Direct URL to the video."
         },
         "message": {
-          "name": "Подпись к видео",
-          "description": "Текст, который будет отправлен вместе с видео."
+          "name": "Caption",
+          "description": "Optional caption for the video."
         },
         "parse_mode": {
-          "name": "Режим разбора",
-          "description": "Парсер текста сообщения."
+          "name": "Parse Mode",
+          "description": "Message text parser."
         },
         "disable_mentions": {
-          "name": "Без звука для упоминаний",
-          "description": "Отключает только специфический пуш об упоминании (@id)."
+          "name": "Silent mentions",
+          "description": "Disables only the specific mention push (@id)."
         },
         "inline_keyboard": {
-          "name": "Инлайн-клавиатура / Меню (клавиатура)",
-          "description": "ВКЛ: кнопки встроены в сообщение. ВЫКЛ: кнопки отображаются в меню под полем ввода."
+          "name": "Inline keyboard / Menu",
+          "description": "ON: buttons are embedded in the message. OFF: buttons are shown in the menu below the input field."
         },
         "auto_answer_callback": {
-          "name": "Автоответ на кнопки",
-          "description": "Установите false, чтобы кружок загрузки на кнопке не исчезал автоматически."
+          "name": "Auto-answer callback",
+          "description": "Set to false to prevent the button loading spinner from disappearing automatically."
         },
         "payload": {
-          "name": "Скрытые данные (Payload)",
-          "description": "Невидимая строка данных."
+          "name": "Hidden data (Payload)",
+          "description": "Invisible data string."
         },
         "keyboard": {
-          "name": "Клавиатура",
-          "description": "JSON-объект с кнопками."
+          "name": "Keyboard",
+          "description": "JSON object for inline or regular keyboard."
         },
         "timeout": {
-          "name": "Таймаут соединения",
-          "description": "Максимальное время ожидания ответа от серверов ВК (в секундах)."
+          "name": "Timeout",
+          "description": "Maximum response wait time from VK servers (in seconds)."
         },
         "reply_to": {
-          "name": "Ответить на сообщение",
-          "description": "Идентификатор сообщения (cmid) в беседе, на которое нужно ответить."
+          "name": "Reply to message",
+          "description": "Message ID (cmid) in the chat to reply to."
         }
       }
     },
     "send_voice": {
-      "name": "Отправить голосовое сообщение",
-      "description": "Отправляет аудиофайл (.ogg) как нативное голосовое сообщение.",
+      "name": "Send voice message",
+      "description": "Sends an audio file (.ogg) as a native voice message.",
       "fields": {
         "file": {
-          "name": "Локальный путь к аудиофайлу",
-          "description": "Локальный путь к файлу .ogg на сервере HA."
+          "name": "Local audio path",
+          "description": "Local path to the .ogg file on the HA server."
         },
         "message": {
-          "name": "Текст",
-          "description": "Текст, который будет отправлен вместе с аудио."
+          "name": "Text",
+          "description": "Text to be sent alongside the audio."
         },
         "parse_mode": {
-          "name": "Режим разбора",
-          "description": "Парсер текста сообщения. Выберите «Обычный текст», чтобы отправить текст «как есть» без преобразования тегов."
+          "name": "Parse Mode",
+          "description": "Message text parser. Choose 'Plain text' to send raw text without formatting."
         },
         "disable_mentions": {
-          "name": "Без звука для упоминаний",
-          "description": "Отключает только специфический пуш об упоминании (@id). Внимание: стандартное уведомление о новом сообщении всё равно придет, если звук в чате не отключен."
+          "name": "Silent mentions",
+          "description": "Disables only the specific mention push (@id). Note: The standard new message notification will still arrive unless the chat is muted."
         },
         "inline_keyboard": {
-          "name": "Инлайн-клавиатура / Меню (клавиатура)",
-          "description": "ВКЛ: кнопки встроены в сообщение. ВЫКЛ: кнопки отображаются в меню под полем ввода."
+          "name": "Inline keyboard / Menu",
+          "description": "ON: buttons are embedded in the message. OFF: buttons are shown in the menu below the input field."
         },
         "auto_answer_callback": {
-          "name": "Автоответ на кнопки",
-          "description": "Установите false, чтобы кружок загрузки на кнопке не исчезал автоматически (для ручного управления через Снэкбары)."
+          "name": "Auto-answer callback",
+          "description": "Set to false to prevent the button loading spinner from disappearing automatically (for manual control via Snackbars)."
         },
         "payload": {
-          "name": "Скрытые данные (Payload)",
-          "description": "Невидимая строка данных, которая вернется боту при ответе или пересылке."
+          "name": "Hidden data (Payload)",
+          "description": "Invisible data string returned to the bot upon reply or forward."
         },
         "keyboard": {
-          "name": "Клавиатура",
-          "description": "JSON-объект с кнопками (inline или обычными)."
+          "name": "Keyboard",
+          "description": "JSON object for inline or regular keyboard."
         },
         "timeout": {
-          "name": "Таймаут соединения",
-          "description": "Максимальное время ожидания ответа от серверов ВК (в секундах)."
+          "name": "Timeout",
+          "description": "Maximum response wait time from VK servers (in seconds)."
         },
         "reply_to": {
-          "name": "Ответить на сообщение",
-          "description": "Идентификатор сообщения (cmid) в беседе, на которое нужно ответить."
+          "name": "Reply to message",
+          "description": "Message ID (cmid) in the chat to reply to."
         }
       }
     },
     "wall_post": {
-      "name": "Опубликовать на стене",
-      "description": "Опубликовать запись на стене сообщества VK. Возвращает post_id.",
+      "name": "Post to wall",
+      "description": "Publish a post on the VK community wall. Returns post_id.",
       "fields": {
         "message": {
-          "name": "Текст поста",
-          "description": "Текст записи."
+          "name": "Post text",
+          "description": "Text of the post."
         },
         "file": {
-          "name": "Локальный путь к файлу",
-          "description": "Локальный путь к документу для прикрепления."
+          "name": "Local file path",
+          "description": "Local path to a document to attach."
         },
         "url": {
-          "name": "URL файла",
-          "description": "Прямая ссылка на файл для прикрепления к записи."
+          "name": "File URL",
+          "description": "Direct URL to a file to attach to the wall post."
         }
       }
     },
     "edit_message": {
-      "name": "Редактировать сообщение",
-      "description": "Изменяет текст, клавиатуру и вложения ранее отправленного сообщения.",
+      "name": "Edit message",
+      "description": "Edits the text, keyboard, and attachments of a previously sent message.",
       "fields": {
         "message": {
-          "name": "Новый текст сообщения",
-          "description": "Новый текст сообщения."
+          "name": "New message text",
+          "description": "New text of the message."
         },
         "parse_mode": {
-          "name": "Режим разбора",
-          "description": "Парсер текста сообщения. Выберите «Обычный текст», чтобы отправить текст «как есть» без преобразования тегов."
+          "name": "Parse Mode",
+          "description": "Message text parser. Choose 'Plain text' to send raw text without formatting."
         },
         "message_id": {
-          "name": "Идентификатор сообщения (В личных сообщениях)",
-          "description": "Внутренний ID сообщения (если известен)."
+          "name": "Message ID (Private)",
+          "description": "Internal message ID (if known)."
         },
         "conversation_message_id": {
-          "name": "Идентификатор сообщения (В беседе)",
-          "description": "ID сообщения внутри чата (cmid)."
+          "name": "Conversation Message ID",
+          "description": "Message ID within the chat (cmid)."
         },
         "attachment": {
-          "name": "Новое вложение",
-          "description": "Строка медиа (photo123_456). Передайте пустую строку для удаления вложения."
+          "name": "New attachment",
+          "description": "Media string (photo123_456). Pass an empty string to remove the attachment."
         },
         "keyboard": {
-          "name": "Новая клавиатура",
-          "description": "Новая клавиатура (необязательно)."
+          "name": "New keyboard",
+          "description": "New keyboard (optional)."
         },
         "disable_mentions": {
-          "name": "Без звука для упоминаний",
-          "description": "Отключает только специфический пуш об упоминании (@id). Внимание: стандартное уведомление о новом сообщении всё равно придет, если звук в чате не отключен."
+          "name": "Silent mentions",
+          "description": "Disables only the specific mention push (@id). Note: The standard new message notification will still arrive unless the chat is muted."
         }
       }
     },
     "delete_message": {
-      "name": "Удалить сообщение",
-      "description": "Удаляет сообщение у всех участников чата.",
+      "name": "Delete message",
+      "description": "Deletes a message for all chat participants.",
       "fields": {
         "conversation_message_id": {
-          "name": "Идентификатор сообщения (cmid)",
-          "description": "ID сообщения внутри чата (cmid)."
+          "name": "Conversation Message ID",
+          "description": "Message ID within the chat (cmid)."
         },
         "delete_for_all": {
-          "name": "Удалить для всех",
-          "description": "Удаляет сообщение у всех участников чата."
+          "name": "Delete for all",
+          "description": "Deletes the message for all chat participants."
         }
       }
     },
     "set_activity": {
-      "name": "Статус активности",
-      "description": "Показывает в чате, что бот печатает или записывает голосовое сообщение.",
+      "name": "Set activity status",
+      "description": "Shows typing or recording audio status in the chat.",
       "fields": {
         "type": {
-          "name": "Тип активности",
-          "description": "typing (печатает) или audiomsg (записывает аудио)."
+          "name": "Activity type",
+          "description": "typing or audiomsg."
         }
       }
     },
     "send_reaction": {
-      "name": "Отправить реакцию (Лайк)",
-      "description": "Устанавливает эмодзи-реакцию на конкретное сообщение.",
+      "name": "Send reaction",
+      "description": "Sets an emoji reaction to a specific message.",
       "fields": {
         "conversation_message_id": {
-          "name": "Идентификатор сообщения (cmid)",
-          "description": "ID сообщения в беседе, на которое нужно поставить реакцию."
+          "name": "Conversation Message ID",
+          "description": "Message ID in the chat to react to."
         },
         "reaction_id": {
-          "name": "Реакция",
-          "description": "Выберите эмоцию или введите свой ID (число)."
+          "name": "Reaction",
+          "description": "Choose an emotion or enter your custom ID (number)."
         }
       }
     },
     "pin_message": {
-      "name": "Закрепить сообщение",
-      "description": "Закрепляет указанное сообщение в шапке диалога.",
+      "name": "Pin message",
+      "description": "Pins the specified message in the chat.",
       "fields": {
         "conversation_message_id": {
-          "name": "Идентификатор сообщения (cmid)",
-          "description": "ID сообщения внутри чата (cmid)."
+          "name": "Conversation Message ID",
+          "description": "Message ID within the chat (cmid)."
         }
       }
     },
     "unpin_message": {
-      "name": "Открепить сообщение",
-      "description": "Открепляет сообщение в шапке беседы. Если ID не передан, открепит текущее закрепленное.",
+      "name": "Unpin message",
+      "description": "Unpins a message in the chat. If no ID is provided, unpins the currently pinned message.",
       "fields": {
         "conversation_message_id": {
-          "name": "Идентификатор сообщения (cmid)",
-          "description": "ID сообщения внутри чата (cmid). Если оставить пустым, открепит последнее закрепленное."
+          "name": "Conversation Message ID",
+          "description": "Message ID within the chat (cmid). If empty, unpins the last pinned message."
         }
       }
     },
     "answer_callback": {
-      "name": "Ответить на нажатие (Снэкбар)",
-      "description": "Останавливает загрузку на кнопке и (опционально) показывает всплывающее уведомление (снэкбар) в приложении ВК.",
+      "name": "Answer Callback (Snackbar)",
+      "description": "Stops the loading spinner on an inline button and optionally shows a snackbar notification.",
       "fields": {
         "event_id": {
           "name": "Event ID",
-          "description": "Идентификатор события (из trigger.event.data.event_id)."
+          "description": "Event ID from trigger.event.data.event_id."
         },
         "user_id": {
           "name": "User ID",
-          "description": "VK ID пользователя, нажавшего кнопку (из trigger.event.data.user_id)."
+          "description": "VK ID of the user who clicked the button (from trigger.event.data.user_id)."
         },
         "message": {
-          "name": "Текст (Снэкбар)",
-          "description": "Текст уведомления (максимум 90 символов). Если оставить пустым, кнопка просто перестанет крутиться."
+          "name": "Message (Snackbar)",
+          "description": "Text to display in the snackbar (max 90 chars). If empty, the button just stops spinning."
         }
       }
     },
     "edit_chat": {
-      "name": "Изменить название беседы",
-      "description": "Меняет заголовок группового чата (Для этого бот должен быть администратором).",
+      "name": "Edit chat title",
+      "description": "Changes the title of a group chat (Bot must be an admin!).",
       "fields": {
         "title": {
-          "name": "Новое название",
-          "description": "Поддерживает эмодзи."
+          "name": "New title",
+          "description": "Supports emojis."
         }
       }
     },
     "get_user_info": {
-      "name": "Получить инфо о пользователе",
-      "description": "Запрашивает данные пользователя. Возвращает Имя, Фамилию и статус Онлайн.",
+      "name": "Get user info",
+      "description": "Requests user data. Returns First Name, Last Name, and Online status.",
       "fields": {
         "user_id": {
-          "name": "VK ID пользователя",
-          "description": "Цифровой ID пользователя (или from_id из события)."
+          "name": "VK User ID",
+          "description": "Numeric User ID (or from_id from an event)."
         }
       }
     },
     "send_sticker": {
-      "name": "Отправить стикер",
-      "description": "Отправляет стикер ВКонтакте по его внутреннему номеру.",
+      "name": "Send sticker",
+      "description": "Sends a VK sticker by its internal ID.",
       "fields": {
         "sticker_id": {
-          "name": "ID Стикера",
-          "description": "Порядковый номер стикера (например, 3 - собака Спотти)."
+          "name": "Sticker ID",
+          "description": "Sequence number of the sticker (e.g., 3 for Spotty dog)."
         },
         "reply_to": {
-          "name": "Ответить на сообщение",
-          "description": "Идентификатор сообщения (cmid) в беседе, на которое нужно ответить."
+          "name": "Reply to message",
+          "description": "Message ID (cmid) in the chat to reply to."
         }
       }
     }

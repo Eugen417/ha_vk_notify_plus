@@ -45,6 +45,16 @@
           "video_access_token": "Optional VK User Token for send_video service",
           "verify_ssl": "DISABLE this if you send files from local IP addresses via HTTPS (fixes SSL certificate errors)."
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate VK Notify Community",
+        "description": "The VK community access token is invalid, expired, or lacks required permissions. Please enter a new community access token.",
+        "data": {
+          "access_token": "Community Access Token"
+        },
+        "data_description": {
+          "access_token": "Required VK community bot token (permissions: Community management, Messages, Photos, Documents)"
+        }
       }
     },
     "error": {
@@ -58,7 +68,8 @@
     },
     "abort": {
       "already_configured": "This VK Notify instance is already configured.",
-      "reconfigure_successful": "Re-configuration was successful."
+      "reconfigure_successful": "Re-configuration was successful.",
+      "reauth_successful": "Re-authentication was successful."
     }
   },
   "config_subentries": {

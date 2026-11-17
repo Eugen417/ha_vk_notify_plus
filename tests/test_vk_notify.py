@@ -35,6 +35,7 @@ class TestVkNotify(unittest.TestCase):
         mock_aiohttp.ClientTimeout = object
         sys.modules.setdefault("aiohttp", mock_aiohttp)
 
+        cls.const = _load_module_ast("const.py")
         cls.fmt = _load_module_ast("formatting.py")
         cls.media = _load_module_ast(
             "media.py",
@@ -46,8 +47,22 @@ class TestVkNotify(unittest.TestCase):
         cls.lp = _load_module_ast(
             "longpoll.py",
             extra_globals={
+                **cls.const,
+                "ConfigEntry": object,
+                "HomeAssistant": object,
                 "redact_sensitive_text": cls.fmt["redact_sensitive_text"],
                 "redact_vk_payload": cls.fmt["redact_vk_payload"],
+            },
+        )
+        cls.diag = _load_module_ast(
+            "diagnostics.py",
+            extra_globals={
+                **cls.const,
+                "ConfigEntry": object,
+                "HomeAssistant": object,
+                "async_redact_data": lambda d, keys: {
+                    k: ("**REDACTED**" if k in keys else v) for k, v in d.items()
+                },
             },
         )
 
@@ -192,6 +207,135 @@ class TestVkNotify(unittest.TestCase):
             norm(["camera.front", "camera.back"]),
             ["camera.front", "camera.back"],
         )
+
+    def test_diagnostics_excludes_personal_names_and_raw_entity_ids(self) -> None:
+        import asyncio
+
+        sub = types.SimpleNamespace(
+            subentry_id="sub_1",
+            subentry_type="chat",
+            title="Ivan Petrov (123456789)",
+            data={"peer_id": 123456789, "name": "Ivan"},
+        )
+        entry = types.SimpleNamespace(
+            entry_id="entry_1",
+            version=1,
+            data={
+                "access_token": "vk1.a.secret",
+                "peer_id": 123456789,
+                "group_id": 987654321,
+                "mode": "longpoll",
+                "name": "Ivan Petrov",
+                "verify_ssl": True,
+            },
+            options={},
+            subentries={"sub_1": sub},
+        )
+        ent = types.SimpleNamespace(
+            entity_id="notify.vk_notify_123456789",
+            unique_id="entry_1_123456789",
+            config_subentry_id="sub_1",
+            disabled=False,
+        )
+        hass = types.SimpleNamespace(
+            data={},
+            states=types.SimpleNamespace(
+                get=lambda _eid: types.SimpleNamespace(
+                    state="2026-11-16T00:00:00+00:00",
+                    attributes={"last_message_id": 10, "last_cmid": 5},
+                )
+            ),
+        )
+        self.diag["er"] = types.SimpleNamespace(
+            async_get=lambda _h: "reg",
+            async_entries_for_config_entry=lambda _r, _eid: [ent],
+        )
+
+        result = asyncio.run(self.diag["async_get_config_entry_diagnostics"](hass, entry))
+        serialized = json.dumps(result, ensure_ascii=False)
+        self.assertNotIn("Ivan", serialized)
+        self.assertNotIn("Petrov", serialized)
+        self.assertNotIn("123456789", serialized)
+        self.assertNotIn("987654321", serialized)
+        self.assertNotIn("notify.vk_notify_123456789", serialized)
+        self.assertEqual(result["config_entry"]["subentries"][0]["subentry_type"], "chat")
+        self.assertNotIn("title", result["config_entry"]["subentries"][0])
+        self.assertEqual(result["entities"][0]["index"], 1)
+        self.assertEqual(result["entities"][0]["masked_peer_id"], "12***89")
+
+    def test_longpoll_auth_error_stops_and_triggers_reauth(self) -> None:
+        import asyncio
+
+        reauth_called = []
+        entry = types.SimpleNamespace(
+            entry_id="entry_lp",
+            data={"group_id": 555},
+            async_start_reauth=lambda h: reauth_called.append(h),
+        )
+        hass = types.SimpleNamespace(
+            config_entries=types.SimpleNamespace(async_entries=lambda _d: [entry])
+        )
+
+        class FakeResp:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                return False
+
+            async def json(self, content_type=None):
+                return {"error": {"error_code": 5, "error_msg": "User authorization failed"}}
+
+        class FakeSession:
+            def get(self, *args, **kwargs):
+                return FakeResp()
+
+        self.lp["async_get_clientsession"] = lambda _h, verify_ssl=True: FakeSession()
+        sleeps = []
+
+        async def fake_sleep(sec):
+            sleeps.append(sec)
+
+        orig_sleep = self.lp["asyncio"].sleep
+        self.lp["asyncio"].sleep = fake_sleep
+        try:
+            mgr = self.lp["VkLongPollManager"](hass, "revoked_tok", 555, entry=entry)
+            asyncio.run(mgr._run())
+        finally:
+            self.lp["asyncio"].sleep = orig_sleep
+
+        self.assertEqual(len(reauth_called), 1)
+        self.assertEqual(sleeps, [])
+
+    def test_longpoll_network_error_exponential_backoff(self) -> None:
+        import asyncio
+
+        calls = 0
+
+        class FakeSession:
+            def get(self, *args, **kwargs):
+                nonlocal calls
+                calls += 1
+                if calls <= 3:
+                    raise OSError("temporary network outage")
+                raise asyncio.CancelledError
+
+        self.lp["async_get_clientsession"] = lambda _h, verify_ssl=True: FakeSession()
+        sleeps = []
+
+        async def fake_sleep(sec):
+            sleeps.append(sec)
+
+        orig_sleep = self.lp["asyncio"].sleep
+        self.lp["asyncio"].sleep = fake_sleep
+        try:
+            mgr = self.lp["VkLongPollManager"](object(), "tok", 555)
+            with self.assertRaises(asyncio.CancelledError):
+                asyncio.run(mgr._run())
+        finally:
+            self.lp["asyncio"].sleep = orig_sleep
+
+        self.assertEqual(sleeps, [5.0, 10.0, 20.0])
 
 
 if __name__ == "__main__":

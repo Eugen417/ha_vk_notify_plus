@@ -6,6 +6,7 @@ with multi-chat selection and automatic community name detection.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, override
 
 import voluptuous as vol
@@ -419,6 +420,63 @@ class VkNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_VIDEO_ACCESS_TOKEN, default=current_video_token
                     ): PASSWORD_SELECTOR,
                     vol.Optional(CONF_VERIFY_SSL, default=current_verify): bool,
+                }
+            ),
+            errors=errors,
+        )
+
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> ConfigFlowResult:
+        """Handle initiation of re-authentication when the VK token is invalid or revoked."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm re-authentication and update the VK community access token."""
+        reauth_entry = self._get_reauth_entry()
+        verify_ssl: bool = reauth_entry.data.get(CONF_VERIFY_SSL, True)
+        mode: str = reauth_entry.data.get(CONF_MODE, MODE_API)
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            new_token = user_input[CONF_ACCESS_TOKEN].strip()
+            try:
+                valid = await _validate_token(
+                    self.hass, new_token, verify_ssl=verify_ssl
+                )
+            except Exception:
+                errors["base"] = "cannot_connect"
+            else:
+                if not valid:
+                    errors["base"] = "invalid_token"
+                else:
+                    group_id, _ = await _detect_group_info(
+                        self.hass, new_token, verify_ssl=verify_ssl
+                    )
+                    group_id = group_id or reauth_entry.data.get(CONF_GROUP_ID)
+
+                    if mode == MODE_LONGPOLL and not group_id:
+                        errors["base"] = "group_id_required"
+                    elif mode == MODE_LONGPOLL and not await _check_longpoll_access(
+                        self.hass, new_token, group_id, verify_ssl=verify_ssl
+                    ):
+                        errors["base"] = "longpoll_no_access"
+                    else:
+                        return self.async_update_reload_and_abort(
+                            reauth_entry,
+                            data_updates={
+                                CONF_ACCESS_TOKEN: new_token,
+                                CONF_GROUP_ID: group_id,
+                            },
+                        )
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_ACCESS_TOKEN): PASSWORD_SELECTOR,
                 }
             ),
             errors=errors,
