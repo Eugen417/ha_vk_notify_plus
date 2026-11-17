@@ -14,9 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Package vk_notify.zip
+        run: |
+          cd custom_components/vk_notify
+          zip -r "${GITHUB_WORKSPACE}/vk_notify.zip" . -x "*/__pycache__/*" "*.pyc" "*.DS_Store"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          files: vk_notify.zip
           generate_release_notes: true
 
 

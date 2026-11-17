@@ -7,7 +7,7 @@
 <p align="center">
   <img alt="HA Validation" src="badges/ha_validation.svg" />
   <a href="https://github.com/hacs/integration"><img alt="hacs_badge" src="badges/hacs.svg" /></a>
-  <img alt="Release v1.0.4" src="badges/release.svg" />
+  <img alt="Release v1.0.5" src="badges/release.svg" />
   <a href="https://www.home-assistant.io/"><img alt="Home Assistant" src="badges/home_assistant.svg" /></a>
   <img alt="VK Notify" src="badges/stars.svg" />
   <a href="LICENSE"><img alt="License: MIT" src="badges/license.svg" /></a>
@@ -61,7 +61,7 @@
 
 [![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=Eugen417&repository=ha_vk_notify_plus&category=integration)
 
-Если кнопка не работает: добавьте пользовательский репозиторий `https://github.com/Eugen417/ha_vk_notify_plus` в HACS / Marketplace вручную (категория: **Интеграция**), установите **VK Notify** и перезапустите Home Assistant.
+Или откройте **HACS / Marketplace** в вашем Home Assistant, найдите в поиске **VK Notify**, нажмите **Скачать** и перезапустите Home Assistant.
 
 ### Установка вручную (без HACS)
 
