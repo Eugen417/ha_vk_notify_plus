@@ -7,7 +7,7 @@
 <p align="center">
   <img alt="HA Validation" src="badges/ha_validation.svg" />
   <a href="https://github.com/hacs/integration"><img alt="hacs_badge" src="badges/hacs.svg" /></a>
-  <img alt="Release v1.0.3" src="badges/release.svg" />
+  <img alt="Release v1.0.4" src="badges/release.svg" />
   <a href="https://www.home-assistant.io/"><img alt="Home Assistant" src="badges/home_assistant.svg" /></a>
   <img alt="VK Notify" src="badges/stars.svg" />
   <a href="LICENSE"><img alt="License: MIT" src="badges/license.svg" /></a>

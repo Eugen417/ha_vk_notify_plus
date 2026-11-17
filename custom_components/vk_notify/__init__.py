@@ -100,8 +100,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: VkNotifyConfigEntry) -> 
 
         # Clean up legacy root device if subentries now own their service devices
         dev_reg = dr.async_get(hass)
-        if legacy_dev := dev_reg.async_get_device(identifiers={(DOMAIN, entry.entry_id)}):
-            dev_reg.async_remove_device(legacy_dev.id)
+        for legacy_dev in dr.async_entries_for_config_entry(dev_reg, entry.entry_id):
+            if (DOMAIN, entry.entry_id) in legacy_dev.identifiers:
+                dev_reg.async_remove_device(legacy_dev.id)
 
     verify_ssl = entry.data.get(CONF_VERIFY_SSL, True)
     client = VkApiClient(hass, entry.data[CONF_ACCESS_TOKEN], verify_ssl=verify_ssl)
