@@ -7,7 +7,7 @@
 <p align="center">
   <img alt="HA Validation" src="badges/ha_validation.svg" />
   <a href="https://github.com/hacs/integration"><img alt="hacs_badge" src="badges/hacs.svg" /></a>
-  <img alt="Release v1.0.2" src="badges/release.svg" />
+  <img alt="Release v1.0.3" src="badges/release.svg" />
   <a href="https://www.home-assistant.io/"><img alt="Home Assistant" src="badges/home_assistant.svg" /></a>
   <img alt="VK Notify" src="badges/stars.svg" />
   <a href="LICENSE"><img alt="License: MIT" src="badges/license.svg" /></a>
@@ -17,7 +17,7 @@
   <a href="README.md">🇷🇺 Русский</a> | <b>🇬🇧 English</b>
 </p>
 
-**VK Notify** custom integration for **Home Assistant** — send text notifications, photos (directly from Home Assistant `camera.*` entities, **Frigate** event URLs, or local files, including multi-photo albums of up to 10 attachments), documents, voice messages, native VK videos, interactive keyboards, and carousels, as well as receive incoming commands, attachments, voice message transcripts (`transcript`), and inline button callbacks via **VK API (v5.199)** and **Bots Long Poll API**. Fully compatible with **Home Assistant 2026.11+**.
+**VK Notify** custom integration for **Home Assistant** — send text notifications, photos (directly from Home Assistant `camera.*` entities, **Frigate** event URLs, or local files, including multi-photo albums of up to 10 attachments), documents, voice messages, native VK videos, interactive keyboards, and carousels, as well as receive incoming commands, attachments, voice message transcripts (`transcript`), and inline button callbacks via **VK API (v5.199)** and **Bots Long Poll API**. Compatible with **Home Assistant 2025.8+ and 2026.x**.
 
 ---
 

@@ -1,11 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="124" height="28" role="img" aria-label="HACS: CUSTOM">
-  <title>HACS: CUSTOM</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="28" role="img" aria-label="HACS: DEFAULT">
+  <title>HACS: DEFAULT</title>
   <g shape-rendering="crispEdges">
     <rect width="54" height="28" fill="#555"/>
-    <rect x="54" width="70" height="28" fill="#41BDF5"/>
+    <rect x="54" width="74" height="28" fill="#41BDF5"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="100">
     <text transform="scale(.1)" x="270" y="175" textLength="300" fill="#fff">HACS</text>
-    <text transform="scale(.1)" x="890" y="175" textLength="460" fill="#fff" font-weight="bold">CUSTOM</text>
+    <text transform="scale(.1)" x="910" y="175" textLength="500" fill="#fff" font-weight="bold">DEFAULT</text>
   </g>
 </svg>
+

@@ -7,7 +7,7 @@
 <p align="center">
   <img alt="HA Validation" src="badges/ha_validation.svg" />
   <a href="https://github.com/hacs/integration"><img alt="hacs_badge" src="badges/hacs.svg" /></a>
-  <img alt="Release v1.0.2" src="badges/release.svg" />
+  <img alt="Release v1.0.3" src="badges/release.svg" />
   <a href="https://www.home-assistant.io/"><img alt="Home Assistant" src="badges/home_assistant.svg" /></a>
   <img alt="VK Notify" src="badges/stars.svg" />
   <a href="LICENSE"><img alt="License: MIT" src="badges/license.svg" /></a>
@@ -17,7 +17,7 @@
   <b>🇷🇺 Русский</b> | <a href="README.en.md">🇬🇧 English</a>
 </p>
 
-Интеграция **VK Notify** для **Home Assistant** — отправка текстовых уведомлений, фотографий (напрямую с камер Home Assistant `camera.*`, снимков **Frigate** по URL или из локальных файлов, включая альбомы до 10 вложений), документов, голосовых и нативных видеосообщений, интерактивных клавиатур, каруселей и приём входящих команд, голосовых сообщений (`transcript`) и нажатий кнопок через **VK API (v5.199)** и **Bots Long Poll API**. Полностью совместима с **Home Assistant 2026.11+**.
+Интеграция **VK Notify** для **Home Assistant** — отправка текстовых уведомлений, фотографий (напрямую с камер Home Assistant `camera.*`, снимков **Frigate** по URL или из локальных файлов, включая альбомы до 10 вложений), документов, голосовых и нативных видеосообщений, интерактивных клавиатур, каруселей и приём входящих команд, голосовых сообщений (`transcript`) и нажатий кнопок через **VK API (v5.199)** и **Bots Long Poll API**. Совместима с **Home Assistant 2025.8+ и 2026.x**.
 
 ---
 
